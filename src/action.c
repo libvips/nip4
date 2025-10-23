@@ -808,6 +808,7 @@ action_proc_notequal(Reduce *rc, Compile *compile,
     }
 }
 
+<<<<<<< HEAD
 static void *
 action_proc_join_sub(Reduce *rc, PElement *pe,
     PElement *a, PElement *b, PElement *out)
@@ -853,6 +854,8 @@ action_proc_join(Reduce *rc, Compile *compile,
         action_boperror(rc, compile, NULL, op, name, a, b);
 }
 
+=======
+>>>>>>> main
 static void
 action_proc_index(Reduce *rc, Compile *compile,
     int op, const char *name, HeapNode **arg, PElement *out)
@@ -1243,6 +1246,7 @@ action_proc_bop_strict(Reduce *rc, Compile *compile,
         action_proc_index(rc, compile, op, name, arg, out);
         break;
 
+<<<<<<< HEAD
     case BI_JOIN:
         action_proc_join(rc, compile, op, name, arg, out);
         break;
@@ -1250,6 +1254,11 @@ action_proc_bop_strict(Reduce *rc, Compile *compile,
     case BI_EQ:
         action_proc_equal(rc, compile, op, name, arg, out);
         break;
+=======
+	case BI_EQ:
+		action_proc_equal(rc, compile, op, name, arg, out);
+		break;
+>>>>>>> main
 
     case BI_NOTEQ:
         action_proc_notequal(rc, compile, op, name, arg, out);
@@ -1642,14 +1651,6 @@ void
 action_proc_construct(Reduce *rc,
     Compile *compile, HeapNode **arg, PElement *out)
 {
-    if (trace_flags & TRACE_CLASS_NEW) {
-        VipsBuf *buf = trace_push();
-
-        vips_buf_appendf(buf, "constructor \"%s\" ",
-            IOBJECT(compile->sym)->name);
-        trace_args(arg, compile->nparam + compile->nsecret);
-    }
-
     if (reduce_safe_pointer(rc,
             (reduce_safe_pointer_fn) action_proc_construct_sub,
             compile, arg, out, NULL))
@@ -1662,11 +1663,6 @@ action_proc_construct(Reduce *rc,
 #ifdef DEBUG
         printf("reduce: invoking arg checker\n");
 #endif
-    }
-
-    if (trace_flags & TRACE_CLASS_NEW) {
-        trace_result(TRACE_CLASS_NEW, out);
-        trace_pop();
     }
 }
 
@@ -1696,6 +1692,7 @@ static void
 action_proc_class_binary(Reduce *rc, Compile *compile,
     int op, const char *name, PElement *a, PElement *b, PElement *out)
 {
+<<<<<<< HEAD
     TraceFlags flags = op >= 0 ? TRACE_OPERATOR : TRACE_BUILTIN;
     PElement fn;
 
@@ -1719,6 +1716,15 @@ action_proc_class_binary(Reduce *rc, Compile *compile,
      */
     if (!class_get_member(a, MEMBER_OO_BINARY, NULL, &fn))
         action_boperror(rc, compile, error_get_sub(), op, name, a, b);
+=======
+	PElement fn;
+
+	/* Look up a.oo_binary and build (a.dispatch_binary "add" b)
+	 * application.
+	 */
+	if (!class_get_member(a, MEMBER_OO_BINARY, NULL, &fn))
+		action_boperror(rc, compile, error_get_sub(), op, name, a, b);
+>>>>>>> main
 
     if (reduce_safe_pointer(rc,
             (reduce_safe_pointer_fn) action_proc_class_binary_sub,
@@ -1732,6 +1738,7 @@ static void
 action_proc_class_binary2(Reduce *rc, Compile *compile,
     int op, const char *name, PElement *a, PElement *b, PElement *out)
 {
+<<<<<<< HEAD
     TraceFlags flags = op >= 0 ? TRACE_OPERATOR : TRACE_BUILTIN;
     PElement fn;
 
@@ -1755,6 +1762,15 @@ action_proc_class_binary2(Reduce *rc, Compile *compile,
      */
     if (!class_get_member(b, MEMBER_OO_BINARY2, NULL, &fn))
         action_boperror(rc, compile, error_get_sub(), op, name, a, b);
+=======
+	PElement fn;
+
+	/* Look up b.dispatch_binary2 and build
+	 * (b.dispatch_binary2 "add" a) application.
+	 */
+	if (!class_get_member(b, MEMBER_OO_BINARY2, NULL, &fn))
+		action_boperror(rc, compile, error_get_sub(), op, name, a, b);
+>>>>>>> main
 
     if (reduce_safe_pointer(rc,
             (reduce_safe_pointer_fn) action_proc_class_binary_sub,
@@ -1773,6 +1789,7 @@ action_landlor(Reduce *rc, Compile *compile,
          */
         return;
 
+<<<<<<< HEAD
     if (trace_flags & TRACE_OPERATOR)
         trace_push();
 
@@ -1830,6 +1847,36 @@ action_landlor(Reduce *rc, Compile *compile,
 
     if (trace_flags & TRACE_OPERATOR)
         trace_pop();
+=======
+	/* Examine the LHS and see if we can avoid RHS eval.
+	 */
+	if (PEISCLASS(a))
+		action_proc_class_binary(rc, compile, op, name, a, b, out);
+	else if (PEISBOOL(a)) {
+		if (op == BI_LOR && PEGETBOOL(a))
+			PEPUTP(out, ELEMENT_BOOL, TRUE);
+		else if (op == BI_LAND && !PEGETBOOL(a))
+			PEPUTP(out, ELEMENT_BOOL, FALSE);
+		else {
+			/* Need to look at RHS too.
+			 */
+			reduce_spine(rc, b);
+
+			if (PEISCOMB(b) && PEGETCOMB(b) != COMB_I) {
+				return;
+			}
+
+			if (PEISCLASS(b))
+				action_proc_class_binary2(rc, compile, op, name, a, b, out);
+			else if (PEISBOOL(b))
+				PEPUTP(out, ELEMENT_BOOL, PEGETBOOL(b));
+			else
+				action_boperror(rc, compile, NULL, op, name, a, b);
+		}
+	}
+	else
+		action_boperror(rc, compile, NULL, op, name, a, b);
+>>>>>>> main
 }
 
 static void
@@ -1848,6 +1895,7 @@ action_if(Reduce *rc, Compile *compile,
     else {
         PElement t, e;
 
+<<<<<<< HEAD
         /* a is condition, b should be [then-part, else-part] ...
          * look down b and find them. Block trace for this, not very
          * interesting.
@@ -1887,6 +1935,27 @@ action_if(Reduce *rc, Compile *compile,
         else if (PEISIMAGE(a)) {
             reduce_spine_strict(rc, &t);
             reduce_spine_strict(rc, &e);
+=======
+		/* a is condition, b should be [then-part, else-part] ...
+		 * look down b and find them.
+		 */
+		reduce_list_index(rc, b, 0, &t);
+		reduce_list_index(rc, b, 1, &e);
+
+		/* Can be BOOL or image.
+		 */
+		if (PEISBOOL(a)) {
+			if (PEGETBOOL(a)) {
+				PEPUTPE(out, &t);
+			}
+			else {
+				PEPUTPE(out, &e);
+			}
+		}
+		else if (PEISIMAGE(a)) {
+			reduce_spine_strict(rc, &t);
+			reduce_spine_strict(rc, &e);
+>>>>>>> main
 
             /* then/else parts must both be image.
              */
@@ -1899,6 +1968,89 @@ action_if(Reduce *rc, Compile *compile,
         else
             action_boperror(rc, compile, NULL, op, name, a, b);
     }
+}
+
+static void *
+action_join_sub(Reduce *rc, PElement *pe,
+	PElement *a, PElement *b, PElement *out, Compile *compile)
+{
+	if (PEISELIST(a))
+		PEPUTPE(pe, b);
+	else if (PEISMANAGEDSTRING(a)) {
+		PElement list = *pe;
+
+		// expand the static string into a list, new_list will point at the []
+		reduce_clone_list(rc, a, &list);
+		// and overwrite the [] with b
+		PEPUTPE(&list, b);
+	}
+	else if (PEISNODE(a) && PEGETVAL(a)->type == TAG_CONS) {
+		HeapNode *cons = PEGETVAL(a);
+		PElement hd;
+		PEPOINTLEFT(cons, &hd);
+		PElement tl;
+		PEPOINTRIGHT(cons, &tl);
+
+		// build the new (++ tl b)
+		PElement data;
+		PEPUTP(pe, ELEMENT_BINOP, BI_JOIN);
+		if (!heap_appl_add(rc->heap, pe, &data))
+			reduce_throw(rc);
+		PEPUTP(&data, ELEMENT_COMPILEREF, compile);
+
+		if (!heap_appl_add(rc->heap, pe, &data))
+			reduce_throw(rc);
+		PEPUTPE(&data, &tl);
+
+		if (!heap_appl_add(rc->heap, pe, &data))
+			reduce_throw(rc);
+		PEPUTPE(&data, b);
+
+		// make the (: hd)
+		if (!heap_list_add(rc->heap, pe, &data))
+			reduce_throw(rc);
+		PEPUTPE(&data, &hd);
+	}
+	else
+		g_assert(FALSE);
+
+	PEPUTPE(out, pe);
+
+	return NULL;
+}
+
+static void
+action_join(Reduce *rc, Compile *compile, int op, const char *name,
+	PElement *a, PElement *b, PElement *out)
+{
+	reduce_spine(rc, a);
+
+	if (PEISCOMB(a) && PEGETCOMB(a) == COMB_I)
+		/* The reduce_spine() did us recursively ... bounce back.
+		 */
+		return;
+
+	if (PEISCLASS(a))
+		action_proc_class_binary(rc, compile, op, name, a, b, out);
+	else if (PEISIMAGE(a)) {
+		reduce_spine(rc, b);
+
+		if (!PEISIMAGE(a) ||
+			!PEISIMAGE(b))
+			action_boperror(rc, compile, NULL, op, name, a, b);
+
+		g_autoptr(VipsArrayImage) c =
+			vips_array_image_newv(2, PEGETIMAGE(a), PEGETIMAGE(b));
+		vo_callva(rc, out, "bandjoin", c);
+	}
+	else if (PEISLIST(a)) {
+		if (reduce_safe_pointer(rc,
+				(reduce_safe_pointer_fn) action_join_sub,
+				a, b, out, compile))
+			action_boperror(rc, compile, error_get_sub(), op, name, a, b);
+	}
+	else
+		action_boperror(rc, compile, NULL, op, name, a, b);
 }
 
 /* Do a binary operator. Result in arg[0].
@@ -1920,10 +2072,14 @@ action_proc_bop(Reduce *rc, Compile *compile, BinOp bop, HeapNode **arg)
 
         action_landlor(rc, compile, bop, OPERATOR_NAME(bop), &a, &b, &out);
 
+<<<<<<< HEAD
         /* Overwrite arg[0] with I node, in case this is a
          * shared node.
          */
         PPUTLEFT(arg[0], ELEMENT_COMB, COMB_I);
+=======
+		PPUTLEFT(arg[0], ELEMENT_COMB, COMB_I);
+>>>>>>> main
 
         break;
 
@@ -1936,10 +2092,26 @@ action_proc_bop(Reduce *rc, Compile *compile, BinOp bop, HeapNode **arg)
 
         action_if(rc, compile, bop, OPERATOR_NAME(bop), &a, &b, &out);
 
+<<<<<<< HEAD
         /* Overwrite arg[0] with I node, in case this is a
          * shared node.
          */
         PPUTLEFT(arg[0], ELEMENT_COMB, COMB_I);
+=======
+		PPUTLEFT(arg[0], ELEMENT_COMB, COMB_I);
+
+		break;
+
+	case BI_JOIN:
+		// also lazy in second arg
+		PEPOINTRIGHT(arg[0], &b);
+		PEPOINTRIGHT(arg[1], &a);
+		PEPOINTRIGHT(arg[0], &out);
+
+		action_join(rc, compile, bop, OPERATOR_NAME(bop), &a, &b, &out);
+
+		PPUTLEFT(arg[0], ELEMENT_COMB, COMB_I);
+>>>>>>> main
 
         break;
 
@@ -1985,6 +2157,7 @@ static void
 action_proc_class_unary(Reduce *rc, Compile *compile,
     int op, const char *name, PElement *a, PElement *out)
 {
+<<<<<<< HEAD
     TraceFlags flags = op >= 0 ? TRACE_OPERATOR : TRACE_BUILTIN;
     PElement fn;
 
@@ -2006,6 +2179,15 @@ action_proc_class_unary(Reduce *rc, Compile *compile,
      */
     if (!class_get_member(a, MEMBER_OO_UNARY, NULL, &fn))
         action_uoperror(rc, compile, error_get_sub(), op, name, a);
+=======
+	PElement fn;
+
+	/* Look up a.dispatch_unary and build
+	 * (a.oo_unary "minus") application.
+	 */
+	if (!class_get_member(a, MEMBER_OO_UNARY, NULL, &fn))
+		action_uoperror(rc, compile, error_get_sub(), op, name, a);
+>>>>>>> main
 
     if (reduce_safe_pointer(rc,
             (reduce_safe_pointer_fn) action_proc_class_unary_sub,
@@ -2022,9 +2204,14 @@ action_dispatch(Reduce *rc, Compile *compile, ReduceFunction rfn,
     int op, const char *name, gboolean override,
     ActionFn afn, int nargs, HeapNode **arg, void *user)
 {
+<<<<<<< HEAD
     TraceFlags flags = op >= 0 ? TRACE_OPERATOR : TRACE_BUILTIN;
     PElement a, b;
     int i;
+=======
+	PElement a, b;
+	int i;
+>>>>>>> main
 
     /* Don't allow nargs == 0. We rely on having a bit of graph we can
      * replace with (I result) for caching.
@@ -2053,6 +2240,7 @@ action_dispatch(Reduce *rc, Compile *compile, ReduceFunction rfn,
     PEPOINTRIGHT(arg[0], &b);
     PEPOINTRIGHT(arg[1], &a);
 
+<<<<<<< HEAD
     if (trace_flags & flags) {
         VipsBuf *buf = trace_push();
 
@@ -2075,4 +2263,16 @@ action_dispatch(Reduce *rc, Compile *compile, ReduceFunction rfn,
         trace_result(flags, &b);
         trace_pop();
     }
+=======
+	if (override && nargs == 2 && PEISCLASS(&a))
+		action_proc_class_binary(rc, compile, op, name, &a, &b, &b);
+	else if (override && nargs == 2 && PEISCLASS(&b))
+		action_proc_class_binary2(rc, compile, op, name, &a, &b, &b);
+	else if (override && nargs == 1 && PEISCLASS(&b))
+		action_proc_class_unary(rc, compile, op, name, &b, &b);
+	else
+		afn(rc, compile, op, name, arg, &b, user);
+
+	PPUTLEFT(arg[0], ELEMENT_COMB, COMB_I);
+>>>>>>> main
 }

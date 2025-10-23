@@ -134,10 +134,6 @@
  */
 #define MAX_ERROR_FRAG (100)
 
-/* Biggest thing we print in trace.
- */
-#define MAX_TRACE (1024)
-
 /* Max chars we display of value.
  */
 #define MAX_LINELENGTH (120)
@@ -282,7 +278,6 @@ typedef struct _Workspace Workspace;
 #include "iregion.h"
 #include "iarrow.h"
 #include "log.h"
-#include "trace.h"
 #include "row.h"
 #include "matrix.h"
 #include "rhs.h"

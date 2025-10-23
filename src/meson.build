@@ -146,7 +146,6 @@ sources = files(
   'toolkitgroupview.c',
   'toolkitview.c',
   'toolview.c',
-  'trace.c',
   'tree.c',
   'tslider.c',
   'util.c',

@@ -8,6 +8,9 @@
 - improve search and display of builtins
 - add `vips_image_guess_interpretation` builtin
 - improve display of computed multipage images
+- batch mode output is lazy
+- ++, join_sep, difference are lazy
+- removed trace system
 
 ## 9.0.13 2025/09/20
 

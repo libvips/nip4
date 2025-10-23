@@ -93,9 +93,7 @@ itext_add_list(PElement *base, VipsBuf *buf, gboolean *first)
 	if (!itext_add_element(buf, base, FALSE, FALSE))
 		return base;
 
-	/* Buffer full? Abort list print.
-	 */
-	if (buf->full)
+	if (vips_buf_is_full(buf))
 		return base;
 
 	return NULL;
@@ -125,11 +123,8 @@ itext_add_string(PElement *base, VipsBuf *buf)
 			return base;
 	}
 
-	/* Buffer full? Abort string print, though it's not an error (return
-	 * NULL).
-	 */
-	if (buf->full)
-		return NULL;
+	if (vips_buf_is_full(buf))
+		return base;
 
 	return NULL;
 }
@@ -288,7 +283,7 @@ itext_decompile_element(VipsBuf *buf, PElement *base, gboolean top)
 	else if (PEISTAG(base))
 		vips_buf_appends(buf, PEGETTAG(base));
 	else
-		graph_pelement(rc->heap, buf, base, TRACE_FUNCTIONS);
+		graph_pelement(rc->heap, buf, base, FALSE);
 
 	return TRUE;
 }
@@ -304,7 +299,8 @@ itext_decompile(Reduce *rc, VipsBuf *buf, PElement *root)
 	if (!reduce_pelement(rc, reduce_spine, root))
 		return FALSE;
 
-	if (!itext_decompile_element(buf, root, TRUE) && !buf->full)
+	if (!itext_decompile_element(buf, root, TRUE) &&
+		!vips_buf_is_full(buf))
 		/* Tally eval failed, and buffer is not full ... must
 		 * have been an eval error.
 		 */
@@ -455,7 +451,7 @@ itext_value(Reduce *rc, VipsBuf *buf, PElement *root)
 		return FALSE;
 
 	if (!itext_add_element(buf, root, TRUE, FALSE) &&
-		!buf->full)
+		!vips_buf_is_full(buf))
 		/* Tally eval failed, and buffer is not full ... must
 		 * have been an eval error.
 		 */
@@ -558,7 +554,8 @@ itext_make_value_string(Expr *expr, VipsBuf *buf)
 		return TRUE;
 	}
 
-	if (!itext_value_toplevel(reduce_context, buf, &expr->root))
+	if (!itext_value_toplevel(reduce_context, buf, &expr->root) &&
+		!vips_buf_is_full(buf))
 		return FALSE;
 
 	return TRUE;

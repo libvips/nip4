@@ -666,24 +666,11 @@ vo_callva_sub(Reduce *rc, PElement *out, const char *name, va_list ap)
 	if (!(vo = vo_new(rc, name)))
 		return FALSE;
 
-	if (trace_flags & TRACE_VIPS) {
-		trace_push();
-		vips_buf_appendf(trace_current(), "\"%s\" ", vo->name);
-	}
-
 	result = TRUE;
 	result = result && vo_call_fillva(vo, ap);
 
-	if (trace_flags & TRACE_VIPS)
-		vips_buf_appends(trace_current(), " ->\n");
-
 	result = result && vo_call_execute(vo, NULL);
 	result = result && vo_write_result(vo, out, TRUE);
-
-	if (trace_flags & TRACE_VIPS) {
-		trace_result(TRACE_VIPS, out);
-		trace_pop();
-	}
 
 	vips_object_unref_outputs(vo->object);
 	vo_free(vo);

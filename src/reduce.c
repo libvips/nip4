@@ -752,7 +752,7 @@ reduce_is_realvec(Reduce *rc, PElement *base)
 	return TRUE;
 }
 
-/* Test for 1st sz elements are reals. Init sz < 0 for unlimited test.
+/* Test for 1st sz elements are images. Init sz < 0 for unlimited test.
  */
 static void *
 reduce_test_image(Reduce *rc, PElement *base, int *sz)
@@ -969,19 +969,7 @@ reduce_list_index(Reduce *rc, PElement *base, int n, PElement *out)
 		reduce_spine(rc, &p);
 	}
 
-	if (trace_flags & TRACE_OPERATOR) {
-		VipsBuf *buf = trace_push();
-
-		trace_pelement(base);
-		vips_buf_appendf(buf, " \"?\" %d ->\n", n);
-	}
-
 	PEPOINTLEFT(hn, out);
-
-	if (trace_flags & TRACE_OPERATOR) {
-		trace_result(TRACE_OPERATOR, out);
-		trace_pop();
-	}
 }
 
 /* No args allowed error.
@@ -1389,19 +1377,6 @@ reduce_start:
 			if (limit)
 				d3 = GETRIGHT(GETRIGHT(hn))->body.num;
 
-			if (trace_flags & TRACE_OPERATOR) {
-				VipsBuf *buf = trace_push();
-
-				if (limit)
-					vips_buf_appendf(buf,
-						"generator %g %g %g ->\n",
-						d1, d2, d3);
-				else
-					vips_buf_appendf(buf,
-						"generator %g %g ->\n",
-						d1, d2);
-			}
-
 			/* At end?
 			 */
 			if (GETRT(GETRIGHT(hn)) != ELEMENT_ELIST &&
@@ -1417,11 +1392,6 @@ reduce_start:
 				/* Write back to node above.
 				 */
 				PEPUTP(&np, ELEMENT_ELIST, NULL);
-
-				if (trace_flags & TRACE_OPERATOR) {
-					trace_result(TRACE_OPERATOR, &np);
-					trace_pop();
-				}
 
 				/* All done!
 				 */
@@ -1447,11 +1417,6 @@ reduce_start:
 			hn2->body.num = d1 + d2;
 			PPUTLEFT(hn1,
 				ELEMENT_NODE, hn2);
-
-			if (trace_flags & TRACE_OPERATOR) {
-				trace_result(TRACE_OPERATOR, &np);
-				trace_pop();
-			}
 
 			/* And loop!
 			 */
@@ -1646,13 +1611,6 @@ reduce_start:
 			if (PEISREAL(&rhs3))
 				d3 = PEGETREAL(&rhs3);
 
-			if (trace_flags & TRACE_OPERATOR) {
-				VipsBuf *buf = trace_push();
-
-				vips_buf_appends(buf, "generator constructor ");
-				trace_args(arg, 3);
-			}
-
 			/* If next is missing, set default.
 			 */
 			if (PEISREAL(&rhs2))
@@ -1699,19 +1657,6 @@ reduce_start:
 			PPUTLEFT(hn1,
 				ELEMENT_NODE, hn2);
 
-			if (trace_flags & TRACE_OPERATOR) {
-				VipsBuf *buf = trace_current();
-
-				vips_buf_appends(buf, "    ");
-				trace_node(arg[0]);
-				vips_buf_appends(buf, "\n");
-
-				trace_text(TRACE_OPERATOR,
-					"%s", vips_buf_all(buf));
-
-				trace_pop();
-			}
-
 			/* Find output element.
 			 */
 			RSPOP(rc, 3);
@@ -1752,7 +1697,7 @@ reduce_start:
 		BinOp bop = PEGETBINOP(&np);
 		HeapNode **arg;
 		Compile *compile;
-		PElement rhs1, rhs2;
+		PElement rhs;
 
 		/* Three args to binops ... first is the Compile that built us
 		 * (for error messages), other two are actual args.
@@ -1770,31 +1715,10 @@ reduce_start:
 		/* CONS is very, very lazy ... more like a combinator.
 		 */
 		if (bop == BI_CONS) {
-			PEPOINTRIGHT(arg[1], &rhs1);
-
-			if (trace_flags & TRACE_OPERATOR) {
-				trace_push();
-
-				PEPOINTRIGHT(arg[0], &rhs2);
-				trace_binop(compile, &rhs1, bop, &rhs2);
-			}
+			PEPOINTRIGHT(arg[1], &rhs);
 
 			arg[0]->type = TAG_CONS;
-			PPUTLEFT(arg[0],
-				PEGETTYPE(&rhs1), PEGETVAL(&rhs1));
-
-			if (trace_flags & TRACE_OPERATOR) {
-				VipsBuf *buf = trace_current();
-
-				vips_buf_appends(buf, "    ");
-				trace_node(arg[0]);
-				vips_buf_appends(buf, "\n");
-
-				trace_text(TRACE_OPERATOR,
-					"%s", vips_buf_all(buf));
-
-				trace_pop();
-			}
+			PPUTLEFT(arg[0], PEGETTYPE(&rhs), PEGETVAL(&rhs));
 
 			RSPOP(rc, 3);
 
@@ -1814,8 +1738,7 @@ reduce_start:
 
 		/* Write to node above.
 		 */
-		PEPUTP(&np,
-			GETRT(arg[0]), GETRIGHT(arg[0]));
+		PEPUTP(&np, GETRT(arg[0]), GETRIGHT(arg[0]));
 
 		/* Loop again with new np.
 		 */

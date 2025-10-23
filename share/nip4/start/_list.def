@@ -37,7 +37,7 @@ delete eq a l
  * difference equal "asdf" "ad" == "sf"
  * difference :: (* -> bool) -> [*] -> [*] -> [*]
  */
-difference = foldl @ converse @ delete;
+difference = foldr @ delete;
 
 /* drop n l: drop the first n elements from list l
  *
@@ -188,7 +188,7 @@ iterate f x = x : iterate f (f x);
  * join_sep :: [*] -> [[*]] -> [*]
  */
 join_sep sep l
-	= foldl1 fn l
+	= foldr1 fn l
 {
 	fn a b = a ++ sep ++ b;
 }
