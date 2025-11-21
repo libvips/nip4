@@ -34,8 +34,8 @@
  */
 
 /*
- */
 #define DEBUG
+ */
 
 /* Dump a binary operator.
  */

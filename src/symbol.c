@@ -789,7 +789,8 @@ symbol_new_defining(Compile *compile, const char *name)
 	/* Block definition of "root" anywhere ... too confusing.
 	 */
 	if (strcmp(name, IOBJECT(symbol_root)->name) == 0)
-		nip2yyerror(_("Attempt to redefine root symbol \"%s\"."), name);
+		nip2yyerror(_("Attempt to redefine root symbol \"%s\"."),
+			name);
 
 	/* Is this a redefinition of an existing symbol in this scope?
 	 */
@@ -848,8 +849,10 @@ symbol_new_defining(Compile *compile, const char *name)
 		 */
 		icontainer_child_move(ICONTAINER(sym), -1);
 	}
-	else
-		sym = symbol_new(compile, name);
+
+	/* Get it ready.
+	 */
+	sym = symbol_new(compile, name);
 
 	return sym;
 }

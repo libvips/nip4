@@ -118,7 +118,6 @@ struct _Symbol {
 	/* For WORKSPACE ... the ws we represent.
 	 */
 	Workspace *ws;
-
 };
 
 typedef struct _SymbolClass {

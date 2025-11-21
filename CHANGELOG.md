@@ -18,6 +18,7 @@
 - improve display of computed multipage images
 - batch mode output is lazy
 - ++, join_sep, difference are lazy
+- const ++ Image no longer works :( patch Colour_atlas
 - removed trace system
 
 ## 9.0.13 2025/09/20
