@@ -34,8 +34,8 @@
  */
 
 /*
- */
 #define DEBUG
+ */
 
 /* Dump a binary operator.
  */
@@ -477,17 +477,6 @@ dump_symbol(Symbol *sym)
 		IOBJECT(sym)->name, sym->ndirtychildren);
 	printf("%s->leaf = %s\n",
 		IOBJECT(sym)->name, bool_to_char(sym->leaf));
-	printf("%s->needs_codegen = %s\n",
-		IOBJECT(sym)->name, bool_to_char(sym->needs_codegen));
-	printf("%s->generated = %s\n",
-		IOBJECT(sym)->name, bool_to_char(sym->generated));
-
-	if (!sym->generated && sym->next_def) {
-		printf("%s->next_def = ", IOBJECT(sym)->name);
-		for (Symbol *p = sym->next_def; p; p = sym->next_def)
-			printf("%s ", IOBJECT(sym)->name);
-		printf("\n");
-	}
 
 	printf("%s->tool = kit ", IOBJECT(sym)->name);
 	if (sym->tool)

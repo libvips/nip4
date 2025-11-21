@@ -469,7 +469,7 @@ main(int argc, char **argv)
 			main_error_exit("%s", _("no \"main\" found"));
 	}
 
-    //main_shutdown();
+    main_shutdown();
 
     return 0;
 }

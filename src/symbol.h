@@ -94,10 +94,6 @@ struct _Symbol {
 	 */
 	gboolean generated;
 
-	/* If this func has multiple defs, chain them on this.
-	 */
-	Symbol *next_def;
-
 	/* A temporary intermediate symbol generated during parse to hold
 	 * stuff until we need it. Don't generate code for these.
 	 */
@@ -118,7 +114,6 @@ struct _Symbol {
 	/* For WORKSPACE ... the ws we represent.
 	 */
 	Workspace *ws;
-
 };
 
 typedef struct _SymbolClass {

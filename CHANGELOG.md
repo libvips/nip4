@@ -1,11 +1,5 @@
 ## master
 
-- pattern matching rewrite
-- add multiple defs and parameter pattern match to compiler
-- add filemodel::new_from_file, rework filemodel_open
-- reloading a toolkit now deletes all defs, then does load ... adding a new
-  def to a func across a parse unit is now an error
-
 ## 9.0.14 2025/10/25
 
 - fix load cancel
@@ -18,6 +12,7 @@
 - improve display of computed multipage images
 - batch mode output is lazy
 - ++, join_sep, difference are lazy
+- const ++ Image no longer works :( patch Colour_atlas
 - removed trace system
 
 ## 9.0.13 2025/09/20

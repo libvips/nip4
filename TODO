@@ -1,4 +1,8 @@
-- nicholas's bug report
+- should allow vips_image ++ Image
+
+- remove remove prefs workspace stuff?
+
+    things like max heap size should be settable ... maybe pres are useful?
 
 - lcomps leave stray unreffed symbols in "list unresolved"
 
@@ -16,39 +20,6 @@
 - programming window is showing generated syms, like $$pattern_lhs0?
 
 - ban patterns in class parameters
-
-    or could we allow multiple class defs?
-
-        Fred (Image x) = class { ... };
-
-    probably only useful for trivial classes
-
-- what about
-
-    fred (list x) = ...;
-    fred (complex x) = ...;
-
-  ie. allow names of builtin types as well as class names
-
-  maybe:
-
-    fred (is_list x) = ...;
-
-  ie. a predicate before the arg, as well as a class name?
-
-- do we allow eg.
-
-    fred [a, b ..] = a + b;
-
-  equivalent to
-
-    fred a:b:x = a + b;
-
-
-
-- remove remove prefs workspace stuff?
-
-    things like max heap size should be settable ... maybe pres are useful?
 
 - try < > in the image titlebar
 
