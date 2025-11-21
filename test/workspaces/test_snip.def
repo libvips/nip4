@@ -133,9 +133,11 @@ tests = concat [
 }
 
 main
-    = (map (const '.') pass) ++
-      "\n" ++
-      (join_sep "\n" (map print_fail fail))
+    = (map (const '.') pass) ++ "\n" ++
+      if fail == [] then
+	"all tests pass"
+      else
+	error (concat (map print_fail fail))
 {
     split fn l
         = foldr split_item [[], []] l
@@ -154,5 +156,5 @@ main
     }
 
     [pass, fail] = split (extract 0) tests;
-    print_fail x = "FAIL: " ++ x?1;
+    print_fail x = "\n" ++ "FAIL: " ++ x?1;
 }

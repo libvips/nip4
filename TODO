@@ -46,9 +46,9 @@
 
 
 
-- remove remove prefs workspace stuff?
+- programming window is showing generated syms, like $$pattern_lhs0?
 
-    things like max heap size should be settable ... maybe pres are useful?
+- ban patterns in class parameters
 
 - try < > in the image titlebar
 

@@ -1790,8 +1790,7 @@ compile_symbol_sub(Symbol *sym)
 {
 	Compile *compile;
 
-	if (sym->expr &&
-		(compile = sym->expr->compile))
+	if (sym->expr && (compile = sym->expr->compile))
 		if (compile_object_sub(compile))
 			return sym;
 
@@ -1911,12 +1910,14 @@ compile_check_i18n(Compile *compile, ParseNode *pn)
 				static GHashTable *msgid = NULL;
 
 				if (!msgid)
-					msgid = g_hash_table_new(g_str_hash, g_str_equal);
+					msgid = g_hash_table_new(
+						g_str_hash, g_str_equal);
 
 				if (!g_hash_table_lookup(msgid, text)) {
 					char buf[MAX_STRSIZE];
 
-					g_hash_table_insert(msgid, (void *) text, NULL);
+					g_hash_table_insert(msgid,
+						(void *) text, NULL);
 					my_strecpy(buf, text, TRUE);
 					printf("msgid \"%s\"\n", buf);
 					printf("msgstr \"\"\n\n");
@@ -2543,7 +2544,8 @@ compile_lcomp(Compile *compile)
 			/* A filter.
 			 */
 			n1 = compile_copy_tree(compile,
-				element->expr->compile->tree, scope);
+				element->expr->compile->tree,
+				scope);
 			n2 = tree_leafsym_new(scope, child);
 			n3 = tree_leaf_new(scope, "$$sofar");
 			n1 = tree_ifelse_new(scope, n1, n2, n3);
@@ -2561,7 +2563,8 @@ compile_lcomp(Compile *compile)
 				IOBJECT(element)->name);
 			param1->generated = TRUE;
 			symbol_parameter_init(param1);
-			param2 = symbol_new_defining(child->expr->compile, "$$sofar");
+			param2 = symbol_new_defining(child->expr->compile,
+				"$$sofar");
 			param2->generated = TRUE;
 			symbol_parameter_init(param2);
 
@@ -2590,7 +2593,8 @@ compile_lcomp(Compile *compile)
 			}
 			n3 = tree_appl_new(scope, n3, n2);
 			n2 = compile_copy_tree(compile,
-				element->expr->compile->tree, scope);
+				element->expr->compile->tree,
+				scope);
 			n3 = tree_appl_new(scope, n3, n2);
 			scope->tree = n3;
 
@@ -2729,9 +2733,11 @@ compile_pattern_access(Compile *compile,
 			 * item in the trail in the list of elements.
 			 */
 			c.type = PARSE_CONST_NUM;
-			c.val.num = g_slist_index(trail[i]->elist, trail[i + 1]);
+			c.val.num = g_slist_index(trail[i]->elist,
+				trail[i + 1]);
 			right = tree_const_new(compile, c);
-			node = tree_binop_new(compile, BI_SELECT, node, right);
+			node = tree_binop_new(compile,
+				BI_SELECT, node, right);
 			break;
 
 		default:

@@ -92,7 +92,7 @@ struct _Symbol {
 
 	/* This is a generated symbol, like $$result, $$fn1, whatever.
 	 */
-	gboolean generated;
+	gboolean needs_codegen;
 
 	/* If this func has multiple defs, chain them on this.
 	 */
@@ -118,7 +118,6 @@ struct _Symbol {
 	/* For WORKSPACE ... the ws we represent.
 	 */
 	Workspace *ws;
-
 };
 
 typedef struct _SymbolClass {

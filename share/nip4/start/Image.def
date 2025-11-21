@@ -919,7 +919,53 @@ Image_transform_item = class
         }
     }
 
-    sep1 = Menuseparator;
+Image_header_item = class
+    Menupullright "_Header" "do stuff to the image header" {
+
+    Image_get_item = class
+        Menupullright "_Get" "get header fields" {
+
+        // the header fields we can get
+        fields = class {
+            type = 0;
+            width = 1;
+            height = 2;
+            format = 3;
+            bands = 4;
+            xres = 5;
+            yres = 6;
+            xoffset = 7;
+            yoffset = 8;
+            coding = 9;
+
+            field_names = Enum [
+                $width => width,
+                $height => height,
+                $bands => bands,
+                $format => format,
+                $type => type,
+                $xres => xres,
+                $yres => yres,
+                $xoffset => xoffset,
+                $yoffset => yoffset,
+                $coding => coding
+            ];
+
+            field_option name = Option_enum (_ "Field") field_names name;
+
+            field_funcs = Table [
+                [type, get_type],
+                [width, get_width],
+                [height, get_height],
+                [format, get_format],
+                [bands, get_bands],
+                [xres, get_xres],
+                [yres, get_yres],
+                [xoffset, get_xoffset],
+                [yoffset, get_yoffset],
+                [coding, get_coding]
+            ];
+        }
 
     Match_item = class
         Menuaction "_Linear Match"
