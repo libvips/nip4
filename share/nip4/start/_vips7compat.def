@@ -84,7 +84,6 @@ im_less_vec im vec = vips_relational_const [] im "less" vec;
 im_lesseq_vec im vec = vips_relational_const [] im "lesseq" vec;
 im_more_vec im vec = vips_relational_const [] im "more" vec;
 im_moreeq_vec im vec = vips_relational_const [] im "moreeq" vec;
-im_notequal_vec in vec = vips_relational_const [] in "noteq" vec;
 
 im_maxpos in =
 	(x, y)
@@ -112,14 +111,15 @@ im_LabS2LabQ x = vips_LabS2LabQ [] x;
 im_LabS2Lab x = vips_LabS2Lab [] x;
 im_LCh2UCS x = vips_LCh2CMC [] x;
 im_LCh2Lab x = vips_LCh2Lab [] x;
-im_scRGB2XYZ x = vips_scRGB2XYZ [] x;
 im_scRGB2sRGB x = vips_scRGB2sRGB [] x;
 im_scRGB2XYZ x = vips_scRGB2XYZ [] x;
 im_UCS2LCh x = vips_CMC2LCh [] x;
+im_XYZ2scRGB in = vips_XYZ2scRGB [] in;
 im_XYZ2Lab x = vips_XYZ2Lab [] x;
 im_XYZ2Lab_temp x x0 y0 z0 = vips_XYZ2Lab [$temp => [x0, y0, z0]] x;
 im_XYZ2Yxy x = vips_XYZ2Yxy [] x;
 im_Yxy2XYZ x = vips_Yxy2XYZ [] x;
+im_sRGB2scRGB in = vips_sRGB2scRGB [] in;
 
 im_XYZ2UCS = im_LCh2UCS @ im_Lab2LCh @ im_XYZ2Lab;
 im_UCS2XYZ = im_Lab2XYZ @ im_LCh2Lab @ im_UCS2LCh;

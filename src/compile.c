@@ -268,6 +268,7 @@ compile_finalize(GObject *gobject)
 	(void) slist_map(compile->children,
 		(SListMapFn) symbol_link_break, compile);
 	VIPS_FREEF(g_slist_free, compile->children);
+	VIPS_FREEF(g_slist_free, compile->matchers);
 
 	/* Remove static strings we created.
 	 */
@@ -1392,8 +1393,7 @@ compile_transform_share(HeapNode *hn, Compile *compile)
 				VipsBuf buf = VIPS_BUF_STATIC(txt);
 
 				graph_node(heap, &buf, hn1, TRUE);
-				printf("Found shared code: %s\n",
-					vips_buf_all(&buf));
+				printf("Found shared code: %s\n", vips_buf_all(&buf));
 			}
 #endif /*DEBUG*/
 
@@ -1468,6 +1468,226 @@ compile_remove_subexpr(Compile *compile, PElement *root)
 	return TRUE;
 }
 
+/* This is a func with multiple defs, or which needs multiple defs. Check that:
+ *
+ * - all defs have the same number of args
+ * - no more than one def has no pattern matching args
+ * - if there is a no-pattern def, it must be the last one
+ */
+static gboolean
+compile_defs_check(Compile *compile)
+{
+	g_assert(compile->sym->next_def || !compile->has_default);
+
+	int nparam = -1;
+	int rhs = 1;
+	for (Symbol *p = compile->sym; p; p = p->next_def, rhs++) {
+		if (nparam == -1)
+			nparam = p->expr->compile->nparam;
+		else if (p->expr->compile->nparam != nparam) {
+			error_top(_("Argument numbers don't match"));
+			error_sub(_("definition %d of \"%s\" should have %d arguments"),
+				rhs, symbol_name(compile->sym), nparam);
+			return FALSE;
+		}
+
+		if (p->expr->compile->params_include_patterns) {
+			/* This RHS has patterns, so it can't be defined after the
+			 * default.
+			 */
+			if (compile->has_default) {
+				error_top(_("Default case already defined"));
+				error_sub(_("definition %d of \"%s\" follows the default case"),
+					rhs, symbol_name(compile->sym));
+				return FALSE;
+			}
+		}
+		else {
+			/* This RHS has no patterns in the args, so it defines the
+			 * default case.
+			 */
+			if (compile->has_default) {
+				error_top(_("Default case already defined"));
+				error_sub(_("definition %d of \"%s\" is a second default case"),
+					rhs, symbol_name(compile->sym));
+				return FALSE;
+			}
+
+			compile->has_default = TRUE;
+		}
+	}
+
+	return TRUE;
+}
+
+/* Generate a parsetree for a "pattern match failed" error.
+ */
+static ParseNode *
+compile_pattern_error(Compile *compile)
+{
+	ParseNode *left;
+	ParseConst n;
+	ParseNode *right;
+	ParseNode *node;
+
+	left = tree_leaf_new(compile, "error");
+	n.type = PARSE_CONST_STR;
+	n.val.str = g_strdup(_("pattern match failed"));
+	right = tree_const_new(compile, n);
+	node = tree_appl_new(compile, left, right);
+
+	return node;
+}
+
+/* Append a default case to the set of defs.
+ */
+static gboolean
+compile_defs_codegen_default(Compile *compile)
+{
+	g_assert(!compile->has_default);
+
+	Symbol *parent = symbol_get_parent(compile->sym);
+	Symbol *def = symbol_new_defining(parent->expr->compile,
+		IOBJECT(compile->sym)->name);
+	(void) symbol_user_init(def);
+	(void) compile_new_local(def->expr);
+	symbol_made(def);
+
+	for (int i = 0; i < compile->nparam; i++) {
+		char name[256];
+
+		g_snprintf(name, sizeof(name), "$$param%d", i);
+		Symbol *param = symbol_new_defining(def->expr->compile, name);
+		param->generated = TRUE;
+		symbol_parameter_init(param);
+	}
+
+	def->expr->compile->tree = compile_pattern_error(def->expr->compile);
+
+	compile->has_default = TRUE;
+
+	/* We ref error, resolve outwards.
+	 */
+	compile_resolve_names(def->expr->compile, parent->expr->compile);
+
+#ifdef DEBUG
+	printf("compile_defs_codegen_default: generated ");
+	dump_compile(def->expr->compile);
+#endif /*DEBUG*/
+
+	return TRUE;
+}
+
+/* We need to:
+ *
+ * - if there's no default case, generate a final definition
+ *
+ *		$$fred_def99 a b c = error "pattern match failed";
+ *
+ *   and link it on to the end of the chain of defs
+ *
+ * - for each pattern match def:
+ *		- save the rhs tree somewhere, eg. for fred [a] = 1; keep the "1"
+ *		- find all the local arg $$pattN on this compile
+ *
+ *				we know compile->nargs, just loop and test?
+ *
+ *				not all args will use patterns
+ *
+ *				we have GSList *compile->param
+ *
+ *		- make a new rhs with
+ *
+ *				ifthenelse(compile_pattern_condition($$patt0) &&
+ *								compile_pattern_condition($$patt1) &&
+ *								...,
+ *						   saved rhs,
+ *						   $$fred_defN)
+ *
+ *		- for each $$pattN
+ *			- for each leaf in the pattern
+ *				- make an access var
+ *		- remove the $$pattN locals
+ *
+ * So for:
+ *
+ *		fred [a] = 12;
+ *
+ * We generate:
+ *
+ *		fred $$arg0
+ *			= 12, if is_list $$arg0 && is_list_len 1 $$argv0
+ *			= $$fred_def0 $$arg0
+ *		{
+ *			a = $$arg0?0
+ *	    }
+ *
+ *		$$fred_def0 $$arg0 = error "pattern match failed";
+ *
+ */
+static gboolean
+compile_defs_codegen(Compile *compile)
+{
+	/* Add the default case, if it's missing.
+	 */
+	if (!compile->has_default &&
+		!compile_defs_codegen_default(compile))
+		return FALSE;
+
+	/* For all syms except the last in this set of defs.
+	 *
+	 * We don't need to gen the final one (always the no pattern default case).
+	 */
+	for (Symbol *sym = compile->sym; sym->next_def; sym = sym->next_def) {
+		Compile *this_compile = sym->expr->compile;
+
+		/* AND all the matches together.
+		 */
+		g_assert(this_compile->matchers);
+		Symbol *match = SYMBOL(this_compile->matchers->data);
+		ParseNode *condition = tree_leafsym_new(this_compile, match);
+		for (GSList *p = this_compile->matchers->next; p; p = p->next) {
+			match = SYMBOL(p->data);
+			ParseNode *node = tree_leafsym_new(this_compile, match);
+			condition = tree_binop_new(this_compile, BI_LAND, condition, node);
+		}
+
+		/* Generate the call to the next def in the chain.
+		 */
+		ParseNode *next_def = tree_leafsym_new(this_compile, sym->next_def);
+		for (GSList *p = this_compile->param; p; p = p->next) {
+			Symbol *param = SYMBOL(p->data);
+
+			ParseNode *node = tree_leafsym_new(this_compile, param);
+			next_def = tree_appl_new(this_compile, next_def, node);
+		}
+
+		/* Wrap the RHS in a condition, bounce to the next in case of fail.
+		 */
+		this_compile->tree = tree_ifelse_new(this_compile,
+			condition,
+			this_compile->tree,		// the old RHS the user wrote
+			next_def);
+
+		/* We may have generated lots of new refs and zombies in this def,
+		 * resolve them outwards.
+		 */
+		compile_resolve_names(this_compile, compile_get_parent(this_compile));
+
+		/* Update recomp links in case this is a top-levelk sym
+		 */
+		symbol_made(sym);
+
+#ifdef DEBUG
+		printf("compile_defs_codegen: generated:\n");
+		if (this_compile->tree)
+			dump_tree(this_compile->tree, 2);
+#endif /*DEBUG*/
+	}
+
+	return TRUE;
+}
+
 /* Top-level compiler driver.
  */
 
@@ -1496,11 +1716,11 @@ compile_heap(Compile *compile)
 	}
 
 #ifdef DEBUG
-	printf("*** compile_expr: about to compile ");
+	printf("*** compile_heap: about to compile ");
 	symbol_name_print(compile->sym);
 	printf("\n");
 	if (compile->tree)
-		dump_tree(compile->tree);
+		dump_tree(compile->tree, 2);
 #endif /*DEBUG*/
 
 	/* Compile function body. Tree can be NULL for classes.
@@ -1570,7 +1790,8 @@ compile_symbol_sub(Symbol *sym)
 {
 	Compile *compile;
 
-	if (sym->expr && (compile = sym->expr->compile))
+	if (sym->expr &&
+		(compile = sym->expr->compile))
 		if (compile_object_sub(compile))
 			return sym;
 
@@ -1608,28 +1829,66 @@ compile_object(Compile *compile)
 }
 
 static void *
-compile_toolkit_sub(Tool *tool)
+compile_codegen(Compile *compile)
 {
-	Compile *compile;
+	Symbol *sym = compile->sym;
 
-	if (tool->sym && tool->sym->expr &&
-		(compile = tool->sym->expr->compile))
-		/* Only if we have no code.
+	if (sym->needs_codegen) {
+#ifdef DEBUG
+		printf("compile_codegen_sym: codegen for ");
+		symbol_name_print(sym);
+		printf("\n");
+		printf("\tbefore codegen, AST is:\n");
+		dump_compile(compile);
+#endif /*DEBUG*/
+
+		/* For now the only codegen is for multiple defs.
 		 */
-		if (compile->base.type == ELEMENT_NOVAL)
-			if (compile_object(compile))
-				return tool;
+		if (sym->next_def ||
+			!compile->has_default) {
+			if (!compile_defs_check(compile) ||
+				!compile_defs_codegen(compile))
+				return sym;
+		}
+	}
+
+	sym->needs_codegen = FALSE;
 
 	return NULL;
 }
 
-/* Scan a toolkit and make sure all the symbols have been compiled.
+/* This is a top-level def: search for any syms which need a codegen pass. For
+ * example, a top-level def might have locals with multiple defs.
  */
 void *
-compile_toolkit(Toolkit *kit)
+compile_codegen_toplevel(Symbol *sym)
 {
-	return toolkit_map(kit,
-		(tool_map_fn) compile_toolkit_sub, NULL, NULL);
+	if (sym->expr &&
+		sym->expr->compile &&
+		compile_map_all(sym->expr->compile,
+			(map_compile_fn) compile_codegen, NULL))
+		return sym;
+
+	return NULL;
+}
+
+static void *
+compile_codegen_tool(Tool *tool)
+{
+	if (tool->sym &&
+		tool->sym->needs_codegen &&
+		compile_codegen_toplevel(tool->sym))
+		return tool;
+
+	return NULL;
+}
+
+/* Scan a toolkit and do any codegen.
+ */
+void *
+compile_codegen_toolkit(Toolkit *kit)
+{
+	return toolkit_map(kit, (tool_map_fn) compile_codegen_tool, NULL, NULL);
 }
 
 /* Parse support.
@@ -1652,14 +1911,12 @@ compile_check_i18n(Compile *compile, ParseNode *pn)
 				static GHashTable *msgid = NULL;
 
 				if (!msgid)
-					msgid = g_hash_table_new(
-						g_str_hash, g_str_equal);
+					msgid = g_hash_table_new(g_str_hash, g_str_equal);
 
 				if (!g_hash_table_lookup(msgid, text)) {
 					char buf[MAX_STRSIZE];
 
-					g_hash_table_insert(msgid,
-						(void *) text, NULL);
+					g_hash_table_insert(msgid, (void *) text, NULL);
 					my_strecpy(buf, text, TRUE);
 					printf("msgid \"%s\"\n", buf);
 					printf("msgstr \"\"\n\n");
@@ -2222,7 +2479,7 @@ compile_lcomp(Compile *compile)
 	ParseNode *n1, *n2, *n3;
 
 #ifdef DEBUG_LCOMP
-	printf("before compile_lcomp:\n");
+	printf("before compile_lcomp: ");
 	dump_compile(compile);
 #endif /*DEBUG_LCOMP*/
 
@@ -2286,8 +2543,7 @@ compile_lcomp(Compile *compile)
 			/* A filter.
 			 */
 			n1 = compile_copy_tree(compile,
-				element->expr->compile->tree,
-				scope);
+				element->expr->compile->tree, scope);
 			n2 = tree_leafsym_new(scope, child);
 			n3 = tree_leaf_new(scope, "$$sofar");
 			n1 = tree_ifelse_new(scope, n1, n2, n3);
@@ -2305,8 +2561,7 @@ compile_lcomp(Compile *compile)
 				IOBJECT(element)->name);
 			param1->generated = TRUE;
 			symbol_parameter_init(param1);
-			param2 = symbol_new_defining(child->expr->compile,
-				"$$sofar");
+			param2 = symbol_new_defining(child->expr->compile, "$$sofar");
 			param2->generated = TRUE;
 			symbol_parameter_init(param2);
 
@@ -2316,7 +2571,7 @@ compile_lcomp(Compile *compile)
 			pattern = compile_lcomp_find_pattern(children,
 				IOBJECT(element)->name);
 			g_assert(pattern);
-			built_syms = compile_pattern_lhs(child->expr->compile,
+			built_syms = compile_pattern(child->expr->compile,
 				param1, pattern->expr->compile->tree);
 			g_slist_free(built_syms);
 
@@ -2335,8 +2590,7 @@ compile_lcomp(Compile *compile)
 			}
 			n3 = tree_appl_new(scope, n3, n2);
 			n2 = compile_copy_tree(compile,
-				element->expr->compile->tree,
-				scope);
+				element->expr->compile->tree, scope);
 			n3 = tree_appl_new(scope, n3, n2);
 			scope->tree = n3;
 
@@ -2376,7 +2630,7 @@ compile_lcomp(Compile *compile)
 	}
 
 #ifdef DEBUG_LCOMP
-	printf("after compile_lcomp:\n");
+	printf("after compile_lcomp: ");
 	dump_compile(compile);
 #endif /*DEBUG_LCOMP*/
 
@@ -2390,36 +2644,53 @@ compile_lcomp(Compile *compile)
  *
  * compiles to:
  *
- * 	sym = x;
- * 	a = if is_list sym && len sym == 1 then sym?0 else error "..";
+ * 	$$valueN = x;
+ * 	$$matchN = is_list $$valueN && len $$valueN == 1;
+ * 	a = if $$matchN then $$valueN?0 else error "pattern match failed";
+ *
+ * Also used for function argument pattern matching.
  */
 
-/* Generate code to access element n of a pattern trail. Eg, pattern is
- * 	[[[a]]]
- * the trail will be
- * 	0) LISTCONST 1) LISTCONST 2) LISTCONST 3) LEAF
- * then access(0) will be
- * 	leaf
- * and access(1) will be
- * 	leaf?0
- * and access(3) (to get the value for a) will be
- * 	leaf?0?0?0
+/* Depth of trail we keep as we walk the pattern.
+ */
+#define MAX_TRAIL (50)
+
+/* Generate code to access element depth of a pattern trail from a value.
+ *
+ * Eg,:
+ *
+ *		$$patt0 = [12, (13, a)]
+ *		$$value0 = [12, (13, 14)]
+ *
+ * the trail for "a" is built as we recurse down $$patt0 AST, so:
+ *
+ *		0) LISTCONST 1) COMPLEX 2) IM
+ *
+ * with n == 3 meaning 3 items in trail.
+ *
+ * For access, we read from left, so:
+ *
+ *	depth	generate		type
+ *
+ *	0		$$value0		list
+ *	1		$$value0?1		complex
+ *	2		im $$value0?1	ref to a
+ *
  */
 static ParseNode *
 compile_pattern_access(Compile *compile,
-	Symbol *leaf, ParseNode **trail, int n)
+	Symbol *value, ParseNode **trail, int depth)
 {
 	ParseNode *node;
 	ParseNode *left;
 	ParseNode *right;
 	ParseConst c;
-	int i;
 
 	/* The initial leaf ref we access from.
 	 */
-	node = tree_leafsym_new(compile, leaf);
+	node = tree_leafsym_new(compile, value);
 
-	for (i = 0; i < n; i++)
+	for (int i = 0; i < depth; i++)
 		switch (trail[i]->type) {
 		case NODE_CONST:
 		case NODE_PATTERN_CLASS:
@@ -2458,11 +2729,9 @@ compile_pattern_access(Compile *compile,
 			 * item in the trail in the list of elements.
 			 */
 			c.type = PARSE_CONST_NUM;
-			c.val.num = g_slist_index(trail[i]->elist,
-				trail[i + 1]);
+			c.val.num = g_slist_index(trail[i]->elist, trail[i + 1]);
 			right = tree_const_new(compile, c);
-			node = tree_binop_new(compile,
-				BI_SELECT, node, right);
+			node = tree_binop_new(compile, BI_SELECT, node, right);
 			break;
 
 		default:
@@ -2472,184 +2741,181 @@ compile_pattern_access(Compile *compile,
 	return node;
 }
 
-/* Generate a parsetree for the condition test. The array of nodes represents
- * the set of conditions we have to test, left to right.
+/* Generate a parsetree for the match test. trail is the trail of parsenodes
+ * we have recursed down to find this pattern root is in trail[0].
+ *
+ * Return NULL for no testing needed.
  */
 static ParseNode *
 compile_pattern_condition(Compile *compile,
-	Symbol *leaf, ParseNode **trail, int depth)
+	Symbol *value, ParseNode **trail, int depth)
 {
-	ParseConst n;
+	g_assert(depth > 0);
+	ParseNode *patt = trail[depth - 1];
+
+	ParseConst c;
 	ParseNode *node;
 	ParseNode *node2;
 	ParseNode *left;
 	ParseNode *right;
-	int i;
 
-	n.type = PARSE_CONST_BOOL;
-	n.val.bol = TRUE;
-	node = tree_const_new(compile, n);
+	node = NULL;
 
-	for (i = depth - 1; i >= 0; i--) {
-		switch (trail[i]->type) {
-		case NODE_LEAF:
+	switch (patt->type) {
+	case NODE_LEAF:
+		break;
+
+	case NODE_BINOP:
+		switch (patt->biop) {
+		case BI_COMMA:
+			/* Generate is_complex x.
+			 */
+			left = tree_leaf_new(compile, "is_complex");
+			right = compile_pattern_access(compile, value, trail, depth - 1);
+			node = tree_appl_new(compile, left, right);
 			break;
 
-		case NODE_BINOP:
-			switch (trail[i]->biop) {
-			case BI_COMMA:
-				/* Generate is_complex x.
-				 */
-				left = tree_leaf_new(compile, "is_complex");
-				right = compile_pattern_access(compile,
-					leaf, trail, i);
-				node2 = tree_appl_new(compile, left, right);
-
-				node = tree_binop_new(compile,
-					BI_LAND, node2, node);
-				break;
-
-			case BI_CONS:
-				/* Generate is_list x && x != [].
-				 */
-				left = tree_leaf_new(compile, "is_list");
-				right = compile_pattern_access(compile,
-					leaf, trail, i);
-				node2 = tree_appl_new(compile, left, right);
-
-				node = tree_binop_new(compile,
-					BI_LAND, node2, node);
-
-				left = compile_pattern_access(compile,
-					leaf, trail, i);
-				n.type = PARSE_CONST_ELIST;
-				right = tree_const_new(compile, n);
-				node2 = tree_binop_new(compile,
-					BI_NOTEQ, left, right);
-
-				node = tree_binop_new(compile,
-					BI_LAND, node, node2);
-				break;
-
-			default:
-				g_assert(0);
-			}
-			break;
-
-		case NODE_LISTCONST:
-			/* Generate is_list x && is_list_len n x.
+		case BI_CONS:
+			/* Generate is_list x && x != [].
 			 */
 			left = tree_leaf_new(compile, "is_list");
-			right = compile_pattern_access(compile,
-				leaf, trail, i);
-			node2 = tree_appl_new(compile, left, right);
+			right = compile_pattern_access(compile, value, trail, depth - 1);
+			node = tree_appl_new(compile, left, right);
 
-			node = tree_binop_new(compile, BI_LAND, node2, node);
-
-			left = tree_leaf_new(compile, "is_list_len");
-			n.type = PARSE_CONST_NUM;
-			n.val.num = g_slist_length(trail[i]->elist);
-			right = tree_const_new(compile, n);
-			left = tree_appl_new(compile, left, right);
-			right = compile_pattern_access(compile,
-				leaf, trail, i);
-			node2 = tree_appl_new(compile, left, right);
+			left = compile_pattern_access(compile, value, trail, depth - 1);
+			c.type = PARSE_CONST_ELIST;
+			right = tree_const_new(compile, c);
+			node2 = tree_binop_new(compile, BI_NOTEQ, left, right);
 
 			node = tree_binop_new(compile, BI_LAND, node, node2);
-			break;
 
-		case NODE_CONST:
-			/* Generate x == n.
+			/* Recurse down the left and right sides in case there's something
+			 * we must test there.
 			 */
-			left = compile_pattern_access(compile,
-				leaf, trail, i);
-			right = tree_const_new(compile, trail[i]->con);
-			node2 = tree_binop_new(compile, BI_EQ, left, right);
+			g_assert(depth < MAX_TRAIL);
+			trail[depth] = patt->arg1;
+			node2 = compile_pattern_condition(compile, value, trail, depth + 1);
+			if (node2)
+				node = tree_binop_new(compile, BI_LAND, node, node2);
 
-			node = tree_binop_new(compile, BI_LAND, node2, node);
-			break;
+			trail[depth] = patt->arg2;
+			node2 = compile_pattern_condition(compile, value, trail, depth + 1);
+			if (node2)
+				node = tree_binop_new(compile, BI_LAND, node, node2);
 
-		case NODE_PATTERN_CLASS:
-			/* Generate is_instanceof "class-name" x.
-			 */
-			left = tree_leaf_new(compile, "is_instanceof");
-			n.type = PARSE_CONST_STR;
-			n.val.str = g_strdup(trail[i]->tag);
-			right = tree_const_new(compile, n);
-			node2 = tree_appl_new(compile, left, right);
-			right = compile_pattern_access(compile,
-				leaf, trail, i);
-			node2 = tree_appl_new(compile, node2, right);
-
-			node = tree_binop_new(compile, BI_LAND, node2, node);
 			break;
 
 		default:
 			g_assert(0);
 		}
+		break;
+
+	case NODE_LISTCONST:
+		/* Generate is_list x && is_list_len n x.
+		 */
+		left = tree_leaf_new(compile, "is_list");
+		right = compile_pattern_access(compile, value, trail, depth - 1);
+		node = tree_appl_new(compile, left, right);
+
+		left = tree_leaf_new(compile, "is_list_len");
+		c.type = PARSE_CONST_NUM;
+		c.val.num = g_slist_length(patt->elist);
+		right = tree_const_new(compile, c);
+		left = tree_appl_new(compile, left, right);
+		right = compile_pattern_access(compile, value, trail, depth - 1);
+		node2 = tree_appl_new(compile, left, right);
+		node = tree_binop_new(compile, BI_LAND, node, node2);
+
+		/* Recurse for each item in the list.
+		 */
+		for (GSList *p = patt->elist; p; p = p->next) {
+			ParseNode *item = (ParseNode *) p->data;
+
+			g_assert(depth < MAX_TRAIL);
+			trail[depth] = item;
+            node2 = compile_pattern_condition(compile, value, trail, depth + 1);
+            if (node2)
+                node = tree_binop_new(compile, BI_LAND, node, node2);
+		}
+
+		break;
+
+	case NODE_CONST:
+		/* Generate x == n.
+		 */
+		left = compile_pattern_access(compile, value, trail, depth - 1);
+		right = tree_const_new(compile, patt->con);
+		node = tree_binop_new(compile, BI_EQ, left, right);
+
+		break;
+
+	case NODE_PATTERN_CLASS:
+		/* Generate is_instanceof "class-name" x.
+		 */
+		left = tree_leaf_new(compile, "is_instanceof");
+		c.type = PARSE_CONST_STR;
+		c.val.str = g_strdup(patt->tag);
+		right = tree_const_new(compile, c);
+		node2 = tree_appl_new(compile, left, right);
+		right = compile_pattern_access(compile, value, trail, depth - 1);
+		node = tree_appl_new(compile, node2, right);
+
+		break;
+
+	default:
+		g_assert(0);
 	}
 
 	return node;
 }
 
-/* Generate a parsetree for a "pattern match failed" error.
- */
-static ParseNode *
-compile_pattern_error(Compile *compile, Symbol *leaf)
-{
-	ParseNode *left;
-	ParseConst n;
-	ParseNode *right;
-	ParseNode *node;
+typedef struct _PatternInfo {
+	Compile *compile;		/* Scope in which we generate new symbols */
 
-	left = tree_leaf_new(compile, "error");
-	n.type = PARSE_CONST_STR;
-	n.val.str = g_strdup(_("pattern match failed"));
-	right = tree_const_new(compile, n);
-	node = tree_appl_new(compile, left, right);
+	ParseNode *pattern;		/* The pattern we are generating syms from */
+	Symbol *value;			/* The thing we fetch values from */
 
-	return node;
-}
-
-/* Depth of trail we keep as we walk the pattern.
- */
-#define MAX_TRAIL (10)
-
-typedef struct _PatternLhs {
-	Compile *compile; /* Scope in which we generate new symbols */
-	Symbol *sym;	  /* Thing we access */
+	/* The $$match condition.
+	 */
+	Symbol *match;
 
 	/* The trail of nodes representing this slice of the pattern.
 	 */
 	ParseNode *trail[MAX_TRAIL];
 	int depth;
+
+	/* The symbols we have built.
+	 */
 	GSList *built_syms;
-} PatternLhs;
+} PatternInfo;
 
 /* Generate one reference. leaf is the new sym we generate.
  */
 static void
-compile_pattern_lhs_leaf(PatternLhs *lhs, Symbol *leaf)
+compile_pattern_leaf(PatternInfo *info, Symbol *leaf)
 {
-	Symbol *sym;
-	Compile *compile;
-
-	sym = symbol_new_defining(lhs->compile, IOBJECT(leaf)->name);
+	Symbol *sym = symbol_new_defining(info->compile, IOBJECT(leaf)->name);
 	sym->generated = TRUE;
 	(void) symbol_user_init(sym);
 	(void) compile_new_local(sym->expr);
-	lhs->built_syms = g_slist_prepend(lhs->built_syms, sym);
-	compile = sym->expr->compile;
+	symbol_made(sym);
 
+	Compile *compile = sym->expr->compile;
 	compile->tree = tree_ifelse_new(compile,
-		compile_pattern_condition(compile,
-			lhs->sym, lhs->trail, lhs->depth),
+		tree_leaf_new(compile, IOBJECT(info->match)->name),
 		compile_pattern_access(compile,
-			lhs->sym, lhs->trail, lhs->depth),
-		compile_pattern_error(compile, leaf));
+			info->value, info->trail, info->depth - 1),
+		compile_pattern_error(compile));
+
+	/* The access sym will contain refs to $$value, $$match etc. which must be
+	 * resolved out one.
+	 */
+	compile_resolve_names(compile, info->compile);
+
+	info->built_syms = g_slist_append(info->built_syms, sym);
 
 #ifdef DEBUG_PATTERN
-	printf("compile_pattern_lhs_leaf: generated\n");
+	printf("compile_pattern_leaf: generated ");
 	dump_compile(compile);
 #endif /*DEBUG_PATTERN*/
 }
@@ -2657,27 +2923,26 @@ compile_pattern_lhs_leaf(PatternLhs *lhs, Symbol *leaf)
 /* Recurse over the pattern generating references.
  */
 static void *
-compile_pattern_lhs_sub(ParseNode *node, PatternLhs *lhs)
+compile_pattern_sub(ParseNode *node, PatternInfo *info)
 {
-	lhs->trail[lhs->depth++] = node;
+	info->trail[info->depth++] = node;
 
 	switch (node->type) {
 	case NODE_LEAF:
-		compile_pattern_lhs_leaf(lhs, node->leaf);
+		compile_pattern_leaf(info, node->leaf);
 		break;
 
 	case NODE_PATTERN_CLASS:
-		compile_pattern_lhs_sub(node->arg1, lhs);
+		compile_pattern_sub(node->arg1, info);
 		break;
 
 	case NODE_BINOP:
-		compile_pattern_lhs_sub(node->arg1, lhs);
-		compile_pattern_lhs_sub(node->arg2, lhs);
+		compile_pattern_sub(node->arg1, info);
+		compile_pattern_sub(node->arg2, info);
 		break;
 
 	case NODE_LISTCONST:
-		slist_map(node->elist,
-			(SListMapFn) compile_pattern_lhs_sub, lhs);
+		slist_map(node->elist, (SListMapFn) compile_pattern_sub, info);
 		break;
 
 	case NODE_CONST:
@@ -2687,37 +2952,81 @@ compile_pattern_lhs_sub(ParseNode *node, PatternLhs *lhs)
 		g_assert(0);
 	}
 
-	lhs->depth--;
+	info->depth--;
 
 	return NULL;
 }
 
-/* Something like "[a] = [1];". sym is the $$pattern we are generating access
- * syms for, node is the pattern tree, compile is the scope in which we
- * generate the new defining symbols. Return a list of the syms we built: they
- * will need any final finishing up and then having symbol_made() called on
- * them. You need to free the list, too.
+Symbol *
+compile_pattern_match(Compile *compile, Symbol *value, ParseNode *pattern)
+{
+	static int match_id = 0;
+
+	char name[256];
+	g_snprintf(name, sizeof(name), "$$match%d", match_id++);
+	Symbol *match = symbol_new_defining(compile, name);
+	match->generated = TRUE;
+	(void) symbol_user_init(match);
+	(void) compile_new_local(match->expr);
+	symbol_made(match);
+
+	ParseNode *trail[MAX_TRAIL];
+	trail[0] = pattern;
+	ParseNode *node =
+		compile_pattern_condition(match->expr->compile, value, trail, 1);
+	if (node)
+		match->expr->compile->tree = node;
+	else {
+		ParseConst c;
+
+		c.type = PARSE_CONST_BOOL;
+		c.val.bol = TRUE;
+		match->expr->compile->tree = tree_const_new(match->expr->compile, c);
+	}
+
+	/* The $$match can call eg. is_list_len, we need to resolve these
+	 * references.
+	 */
+	compile_resolve_names(match->expr->compile, compile);
+
+#ifdef DEBUG
+	printf("compile_pattern_match: generated ");
+	dump_compile(match->expr->compile);
+#endif /*DEBUG*/
+
+	return match;
+}
+
+/* Something like "[a] = [1];". sym is the $$value0 we fetch values from,
+ * node is the pattern tree, compile is the scope in which we
+ * generate the new defining symbols.
+ *
+ *		$$match0 = if is_list $$value0 && ...
+ *		a = if $$match0 then $$value0?0 else error "pattern match failed"
+ *		b = ...
+ *
+ * Return a list of the new symbols we built, they will need finishing up.
+ *
+ * The first returned sym is the $$match test.
  */
 GSList *
-compile_pattern_lhs(Compile *compile, Symbol *sym, ParseNode *node)
+compile_pattern(Compile *compile, Symbol *value, ParseNode *pattern)
 {
-	PatternLhs lhs;
+	PatternInfo info;
 
-#ifdef DEBUG_PATTERN
-	printf("compile_pattern_lhs: building access fns for %s\n",
-		symbol_name(sym));
-#endif /*DEBUG_PATTERN*/
+	info.compile = compile;
+	info.value = value;
+	info.depth = 0;
+	info.match = compile_pattern_match(compile, value, pattern);
+	info.built_syms = NULL;
 
-	lhs.compile = compile;
-	lhs.sym = sym;
-	lhs.depth = 0;
-	lhs.built_syms = NULL;
+	info.built_syms = g_slist_append(info.built_syms, info.match);
 
-	compile_pattern_lhs_sub(node, &lhs);
+	compile_pattern_sub(pattern, &info);
 
-	g_assert(lhs.depth == 0);
+	g_assert(info.depth == 0);
 
-	return lhs.built_syms;
+	return info.built_syms;
 }
 
 static ParseNode *

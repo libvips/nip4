@@ -48,7 +48,7 @@ void pgraph(PElement *graph);
 void graph_heap(int nsp, HeapNode *hn);
 void graph_test(Heap *heap);
 
-void *dump_tree(ParseNode *n);
+void *dump_tree(ParseNode *n, int indent);
 
 void dump_links(Symbol *sym);
 void *dump_link(Link *link);

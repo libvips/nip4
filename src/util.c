@@ -653,7 +653,7 @@ slist_fold2(GSList *list, void *start, SListFold2Fn fn, void *a, void *b)
 	return c;
 }
 
-/* Remove all occurences of an item from a list.
+/* Remove all occurrences of an item from a list.
  */
 GSList *
 slist_remove_all(GSList *list, gpointer data)
@@ -1052,7 +1052,7 @@ my_strrcspn(const char *p, const char *spn)
 	return p1;
 }
 
-/* Find the rightmost occurence of string a in string b.
+/* Find the rightmost occurrence of string a in string b.
  */
 const char *
 findrightmost(const char *a, const char *b)
@@ -1364,7 +1364,7 @@ nativeize_path(char *buf)
 		g_snprintf(buf, VIPS_PATH_MAX, "%s", filename);
 }
 
-/* Change all occurences of "from" into "to". This will loop if "to" contains
+/* Change all occurrences of "from" into "to". This will loop if "to" contains
  * "from", beware.
  */
 static void

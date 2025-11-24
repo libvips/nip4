@@ -499,7 +499,7 @@ path_scan_dir(const char *dir_name, Search *search)
  * for all filenames which match.
  *
  * Remove duplicates: if fred.wombat is in the first and second dirs on the
- * path, only apply to the first occurence.
+ * path, only apply to the first occurrence.
 
 	FIXME ... speed up with a hash and a (date based) cache at some point
 

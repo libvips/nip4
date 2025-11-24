@@ -396,7 +396,7 @@ mainwindow_merge_action(GSimpleAction *action,
 
 	if (main->wsg) {
 		workspacegroup_set_load_type(main->wsg, WORKSPACEGROUP_LOAD_NEW);
-		filemodel_open(GTK_WINDOW(main), FILEMODEL(main->wsg), _("Merge"),
+		filemodel_merge(GTK_WINDOW(main), FILEMODEL(main->wsg), _("Merge"),
 			mainwindow_merge_next,
 			mainwindow_save_error, main, NULL);
 	}

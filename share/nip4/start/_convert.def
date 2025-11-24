@@ -388,13 +388,6 @@ im_RGB162GREY16 in
 im_GREY162RGB16 in
 	= set_header $interpretation $rgb16 (in ++ in ++ in);
 
-/* The vips8 scRGB functions.
- */
-im_sRGB2scRGB in = vips_sRGB2scRGB [] in;
-im_scRGB2sRGB in = vips_scRGB2sRGB [] in;
-im_scRGB2XYZ in = vips_scRGB2XYZ [] in;
-im_XYZ2scRGB in = vips_XYZ2scRGB [] in;
-
 /* apply a func to an image ... make it 1 or 3 bands, and reapply other bands
  * on the way out. Except if it's LABPACK.
  */

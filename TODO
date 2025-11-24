@@ -1,3 +1,11 @@
+check these:
+
+	both modified:   TODO
+	both modified:   share/nip4/start/Image.def
+	both modified:   share/nip4/start/_stdenv.def
+	both modified:   share/nip4/start/_types.def
+
+
 # menu redesign
 
 - delete column containing error does not clear /!\ from tab
@@ -128,40 +136,55 @@
 
 - add magick7 support to _magick.def
 
+- nicholas's bug report
+
+- lcomps leave stray unreffed symbols in "list unresolved"
+
+    Image_transform_item.Resize_item.Size_within_item.action.within ($SAVEDIR/start/Image.def:509)  refers to undefined symbol h
+    Image_transform_item.Resize_item.Size_within_item.action.within ($SAVEDIR/start/Image.def:509)  refers to undefined symbol w
+
+- rework pattern matching in lcomps
+
+- what does the programming window do for multiple defs?
+
+    probably need to follow next_def and concatenate them all
+
+- dir should hide $$vars
+
+- programming window is showing generated syms, like $$pattern_lhs0?
+
+- ban patterns in class parameters
+
+    or could we allow multiple class defs?
+
+        Fred (Image x) = class { ... };
+
+    probably only useful for trivial classes
+
+- what about
+
+    fred (list x) = ...;
+    fred (complex x) = ...;
+
+  ie. allow names of builtin types as well as class names
+
+  maybe:
+
+    fred (is_list x) = ...;
+
+  ie. a predicate before the arg, as well as a class name?
+
+- do we allow eg.
+
+    fred [a, b ..] = a + b;
+
+  equivalent to
+
+    fred a:b:x = a + b;
 
 - remove remove prefs workspace stuff?
 
     things like max heap size should be settable ... maybe pres are useful?
-
-- add multiple definitions, finish function argument destructuring
-
-    sym has a field for "next definition", initially NULL
-
-`   add_defining looks for an existing sym with this name, if it finds
-    one, add a new sym called "{name}-$$4" or whatever
-
-    chase to the end of "next definition" on the existing sym, append our
-    new sym
-
-    during compile, generate code like
-
-        fred a b c
-            = destructured_fred, args_match
-            = fred-$$1 a b c
-        {
-            destructured_fred = rhs of fred
-            args_match = a_matches && b_matches && c_matches
-        }
-
-    if a func has many RHS and the last RHS uses destrucuring, generate a
-    final def with
-
-        fred a b c
-            = error "no def of fred matches args a b c";
-
-    - error if more than one def of fred has no destructuring
-    - error if defs don't all have the same number of args
-    - error if a def with no destructuring isn't the last def
 
 - try < > in the image titlebar
 

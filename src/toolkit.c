@@ -106,6 +106,47 @@ toolkit_load_text(Model *model, Model *parent, iOpenFile *of)
 	return res;
 }
 
+void
+toolkit_set_name(Toolkit *kit, const char *name)
+{
+	iobject_set(IOBJECT(kit), name, NULL);
+	if (name[0] == '_')
+		MODEL(kit)->display = FALSE;
+	toolkitgroup_sort(kit->kitg);
+}
+
+static void
+toolkit_link(Toolkit *kit, Toolkitgroup *kitg, const char *name)
+{
+	icontainer_child_add(ICONTAINER(kitg), ICONTAINER(kit), -1);
+	kit->kitg = kitg;
+	filemodel_register(FILEMODEL(kit));
+	toolkit_set_name(kit, name);
+}
+
+static Filemodel *
+toolkit_real_new_from_filename(Filemodel *filemodel,
+	Model *parent, const char *filename)
+{
+	Toolkitgroup *kitg = TOOLKITGROUP(parent);
+
+	Toolkit *kit;
+
+#ifdef DEBUG
+	printf("toolkit_new: %s\n", name);
+#endif /*DEBUG*/
+
+	/* New kit, destroying any old kit.
+	 */
+	char name[VIPS_PATH_MAX];
+	name_from_filename(filename, name);
+	kit = toolkit_new(kitg, name);
+
+	// superclass loads into this filemodel
+	return FILEMODEL_CLASS(toolkit_parent_class)->
+		new_from_filename(FILEMODEL(kit), parent, filename);
+}
+
 static GtkFileFilter *
 toolkit_filter_new(Filemodel *filemodel)
 {
@@ -137,6 +178,7 @@ toolkit_class_init(ToolkitClass *class)
 	model_class->save_text = toolkit_save_text;
 	model_class->load_text = toolkit_load_text;
 
+	filemodel_class->new_from_filename = toolkit_real_new_from_filename;
 	filemodel_class->filter_new = toolkit_filter_new;
 	filemodel_class->suffix = ".def";
 }
@@ -146,24 +188,6 @@ toolkit_init(Toolkit *kit)
 {
 	kit->kitg = NULL;
 	kit->pseudo = FALSE;
-}
-
-void
-toolkit_set_name(Toolkit *kit, const char *name)
-{
-	iobject_set(IOBJECT(kit), name, NULL);
-	if (name[0] == '_')
-		MODEL(kit)->display = FALSE;
-	toolkitgroup_sort(kit->kitg);
-}
-
-static void
-toolkit_link(Toolkit *kit, Toolkitgroup *kitg, const char *name)
-{
-	icontainer_child_add(ICONTAINER(kitg), ICONTAINER(kit), -1);
-	kit->kitg = kitg;
-	filemodel_register(FILEMODEL(kit));
-	toolkit_set_name(kit, name);
 }
 
 /* Find a kit by kit name.
@@ -197,54 +221,14 @@ toolkit_new(Toolkitgroup *kitg, const char *name)
 	return kit;
 }
 
-Toolkit *
-toolkit_new_filename(Toolkitgroup *kitg, const char *filename)
-{
-	char name[VIPS_PATH_MAX];
-	Toolkit *kit;
-
-	name_from_filename(filename, name);
-	kit = toolkit_new(kitg, name);
-	filemodel_set_filename(FILEMODEL(kit), filename);
-
-	return kit;
-}
-
 /* Load a file as a toolkit.
  */
 Toolkit *
 toolkit_new_from_file(Toolkitgroup *kitg, const char *filename)
 {
-	Toolkit *kit = toolkit_new_filename(kitg, filename);
-	gboolean res;
+	FilemodelClass *class = FILEMODEL_CLASS(g_type_class_peek(TOOLKIT_TYPE));
 
-	res = filemodel_load_all(FILEMODEL(kit), MODEL(kitg), filename, NULL);
-	filemodel_set_modified(FILEMODEL(kit), FALSE);
-
-	/* Don't remove the kit if load failed, we want to leave it so the
-	 * user can try to fix the problem.
-	 */
-
-	return res ? kit : NULL;
-}
-
-/* Load from an iOpenFile.
- */
-Toolkit *
-toolkit_new_from_openfile(Toolkitgroup *kitg, iOpenFile *of)
-{
-	Toolkit *kit = toolkit_new_filename(kitg, of->fname);
-	gboolean res;
-
-	res = filemodel_load_all_openfile(FILEMODEL(kit),
-		MODEL(kitg), of);
-	filemodel_set_modified(FILEMODEL(kit), FALSE);
-
-	/* Don't remove the kit if load failed, we want to leave it so the
-	 * user can try to fix the problem.
-	 */
-
-	return res ? kit : NULL;
+	return TOOLKIT(filemodel_new_from_filename(class, MODEL(kitg), filename));
 }
 
 /* Look up a toolkit, make an empty one if not there.
@@ -255,13 +239,15 @@ toolkit_by_name(Toolkitgroup *kitg, const char *name)
 	Toolkit *kit;
 
 	if (!(kit = toolkit_find(kitg, name))) {
-		char file[VIPS_PATH_MAX];
+		char filename[VIPS_PATH_MAX];
 
-		g_snprintf(file, VIPS_PATH_MAX,
+		g_snprintf(filename, VIPS_PATH_MAX,
 			"$SAVEDIR" G_DIR_SEPARATOR_S "start" G_DIR_SEPARATOR_S
 			"%s.def",
 			name);
-		kit = toolkit_new_filename(kitg, file);
+
+		kit = toolkit_new(kitg, name);
+		filemodel_set_filename(FILEMODEL(kit), filename);
 	}
 
 	return kit;

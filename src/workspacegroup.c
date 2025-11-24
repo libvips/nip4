@@ -600,7 +600,8 @@ workspacegroup_top_load(Filemodel *filemodel,
 		g_assert(FALSE);
 	}
 
-	return FILEMODEL_CLASS(workspacegroup_parent_class)->top_load(filemodel, state, parent, xnode);
+	return FILEMODEL_CLASS(workspacegroup_parent_class)->
+		top_load(filemodel, state, parent, xnode);
 }
 
 /* Save the workspace to one of our temp files.

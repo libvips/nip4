@@ -67,6 +67,8 @@ typedef struct _FilemodelClass {
 
 	/*
 
+		new_from_filename	make a filemodel from a filename
+
 		top_load			top level load function ... controls how the
 							rest of the load happens ... eg. merge,
 							rename, etc.
@@ -82,6 +84,8 @@ typedef struct _FilemodelClass {
 
 	 */
 
+	Filemodel *(*new_from_filename)(Filemodel *filemodel,
+		Model *parent, const char *filename);
 	gboolean (*top_load)(Filemodel *filemodel,
 		ModelLoadState *state, Model *parent, xmlNode *xnode);
 	void (*set_modified)(Filemodel *filemodel, gboolean modified);
@@ -107,6 +111,8 @@ void filemodel_set_modified(Filemodel *filemodel, gboolean state);
 
 GType filemodel_get_type(void);
 
+Filemodel *filemodel_new_from_filename(FilemodelClass *class,
+	Model *parent, const char *filename);
 gboolean filemodel_top_save(Filemodel *filemodel, const char *filename);
 gboolean filemodel_load_all(Filemodel *filemodel, Model *parent,
 	const char *filename, const char *filename_user);
@@ -130,12 +136,16 @@ void filemodel_save(GtkWindow *window, Filemodel *filemodel,
 	FilemodelSaveasResult next,
 	FilemodelSaveasResult error, void *a, void *b);
 
-void filemodel_open(GtkWindow *window, Filemodel *filemodel,
-	const char *verb,
+void filemodel_merge(GtkWindow *window,
+	Filemodel *filemodel, const char *verb,
 	FilemodelSaveasResult next,
 	FilemodelSaveasResult error, void *a, void *b);
-void filemodel_replace(GtkWindow *window, Filemodel *filemodel,
-	const char *verb,
+void filemodel_new_from_file(GtkWindow *window,
+	FilemodelClass *class, Model *parent, const char *verb,
+	FilemodelSaveasResult next,
+	FilemodelSaveasResult error, void *a, void *b);
+void filemodel_replace(GtkWindow *window,
+	Filemodel *filemodel, const char *verb,
 	FilemodelSaveasResult next,
 	FilemodelSaveasResult error, void *a, void *b);
 

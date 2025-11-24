@@ -120,6 +120,13 @@ filemodel_unregister(Filemodel *filemodel)
 	}
 }
 
+Filemodel *
+filemodel_new_from_filename(FilemodelClass *class,
+	Model *parent, const char *filename)
+{
+	return class->new_from_filename(NULL, parent, filename);
+}
+
 /* Trigger the top_load method for a filemodel.
  */
 void *
@@ -128,18 +135,8 @@ filemodel_top_load(Filemodel *filemodel,
 {
 	FilemodelClass *filemodel_class = FILEMODEL_GET_CLASS(filemodel);
 
-	if (filemodel_class->top_load) {
-		if (!filemodel_class->top_load(filemodel, state, parent, xnode))
-			return filemodel;
-	}
-	else {
-		error_top(_("Not implemented"));
-		error_sub(_("_%s() not implemented for class \"%s\""),
-			"top_load",
-			G_OBJECT_CLASS_NAME(filemodel_class));
-
+	if (!filemodel_class->top_load(filemodel, state, parent, xnode))
 		return filemodel;
-	}
 
 	return NULL;
 }
@@ -325,6 +322,18 @@ filemodel_real_load(Model *model,
 	return TRUE;
 }
 
+static Filemodel *
+filemodel_real_new_from_filename(Filemodel *filemodel,
+	Model *parent, const char *filename)
+{
+	// derived class makes the object we load into
+	filemodel_set_filename(filemodel, filename);
+	gboolean res = filemodel_load_all(filemodel, parent, filename, NULL);
+	filemodel_set_modified(filemodel, FALSE);
+
+	return res ? filemodel : NULL;
+}
+
 static gboolean
 filemodel_real_top_load(Filemodel *filemodel,
 	ModelLoadState *state, Model *parent, xmlNode *xnode)
@@ -471,6 +480,7 @@ filemodel_class_init(FilemodelClass *class)
 	model_class->save = filemodel_real_save;
 	model_class->load = filemodel_real_load;
 
+	class->new_from_filename = filemodel_real_new_from_filename;
 	class->top_load = filemodel_real_top_load;
 	class->set_modified = filemodel_real_set_modified;
 	class->top_save = filemodel_real_top_save;
@@ -915,7 +925,7 @@ filemodel_save(GtkWindow *window, Filemodel *filemodel,
 }
 
 static void
-filemodel_open_sub(GObject *source_object,
+filemodel_merge_sub(GObject *source_object,
 	GAsyncResult *res, gpointer user_data)
 {
 	GtkFileDialog *dialog = GTK_FILE_DIALOG(source_object);
@@ -948,8 +958,7 @@ filemodel_open_sub(GObject *source_object,
 }
 
 void
-filemodel_open(GtkWindow *window, Filemodel *filemodel,
-	const char *verb,
+filemodel_merge(GtkWindow *window, Filemodel *filemodel, const char *verb,
 	FilemodelSaveasResult next,
 	FilemodelSaveasResult error, void *a, void *b)
 {
@@ -985,7 +994,83 @@ filemodel_open(GtkWindow *window, Filemodel *filemodel,
 		g_object_unref(filters);
 	}
 
-	gtk_file_dialog_open(dialog, window, NULL, &filemodel_open_sub, NULL);
+	gtk_file_dialog_open(dialog, window, NULL, &filemodel_merge_sub, NULL);
+}
+
+static void
+filemodel_new_from_file_sub(GObject *source_object,
+	GAsyncResult *res, gpointer user_data)
+{
+	GtkFileDialog *dialog = GTK_FILE_DIALOG(source_object);
+
+	GtkWindow *window = g_object_get_data(G_OBJECT(dialog), "nip4-window");
+	FilemodelClass *class =
+		g_object_get_data(G_OBJECT(dialog), "nip4-filemodelclass");
+	Model *parent =
+		g_object_get_data(G_OBJECT(dialog), "nip4-parent");
+	FilemodelSaveasResult next =
+		g_object_get_data(G_OBJECT(dialog), "nip4-next");
+	FilemodelSaveasResult error =
+		g_object_get_data(G_OBJECT(dialog), "nip4-error");
+	void *a = g_object_get_data(G_OBJECT(dialog), "nip4-a");
+	void *b = g_object_get_data(G_OBJECT(dialog), "nip4-b");
+
+	g_autoptr(GFile) file = gtk_file_dialog_open_finish(dialog, res, NULL);
+	if (file) {
+		g_autofree char *filename = g_file_get_path(file);
+
+		Filemodel *filemodel =
+			filemodel_new_from_filename(class, parent, filename);
+		if (filemodel) {
+			filemodel_set_load_folder(filemodel, file);
+			if (next)
+				next(window, filemodel, a, b);
+		}
+		else {
+			if (error)
+				error(window, filemodel, a, b);
+		}
+	}
+}
+
+void
+filemodel_new_from_file(GtkWindow *window,
+	FilemodelClass *class, Model *parent, const char *verb,
+	FilemodelSaveasResult next,
+	FilemodelSaveasResult error, void *a, void *b)
+{
+	const char *user_name = IOBJECT_CLASS(class)->user_name;
+	g_autofree char *title = g_strdup_printf("%s %s", verb, user_name);
+
+	GtkFileDialog *dialog = gtk_file_dialog_new();
+	gtk_file_dialog_set_title(dialog, title);
+	gtk_file_dialog_set_modal(dialog, TRUE);
+	gtk_file_dialog_set_accept_label(dialog, verb);
+	gtk_file_dialog_set_initial_folder(dialog, class->load_folder);
+
+	g_object_set_data(G_OBJECT(dialog), "nip4-window", window);
+	g_object_set_data(G_OBJECT(dialog), "nip4-filemodelclass", class);
+	g_object_set_data(G_OBJECT(dialog), "nip4-parent", parent);
+	g_object_set_data(G_OBJECT(dialog), "nip4-next", next);
+	g_object_set_data(G_OBJECT(dialog), "nip4-error", error);
+	g_object_set_data(G_OBJECT(dialog), "nip4-a", a);
+	g_object_set_data(G_OBJECT(dialog), "nip4-b", b);
+
+	GtkFileFilter *filter = class->filter_new(NULL);
+	GListStore *filters = g_list_store_new(GTK_TYPE_FILE_FILTER);
+
+	g_list_store_append(filters, G_OBJECT(filter));
+	g_object_unref(filter);
+
+	filter = mainwindow_filter_all_new();
+	g_list_store_append(filters, G_OBJECT(filter));
+	g_object_unref(filter);
+
+	gtk_file_dialog_set_filters(dialog, G_LIST_MODEL(filters));
+	g_object_unref(filters);
+
+	gtk_file_dialog_open(dialog,
+		window, NULL, &filemodel_new_from_file_sub, NULL);
 }
 
 typedef struct _Suspension {
@@ -1006,7 +1091,7 @@ filemodel_replace_next(GtkWindow *window,
 
 	model_empty(MODEL(filemodel));
 
-	filemodel_open(sus->window, sus->filemodel, sus->verb,
+	filemodel_merge(sus->window, sus->filemodel, sus->verb,
 		sus->next, sus->error, sus->a, sus->b);
 
 	g_free(sus);
@@ -1024,15 +1109,13 @@ filemodel_replace_error(GtkWindow *window,
 }
 
 void
-filemodel_replace(GtkWindow *window, Filemodel *filemodel,
-	const char *verb,
+filemodel_replace(GtkWindow *window, Filemodel *filemodel, const char *verb,
 	FilemodelSaveasResult next,
 	FilemodelSaveasResult error, void *a, void *b)
 {
 	Suspension *sus = g_new(Suspension, 1);
 	sus->window = window;
 	sus->filemodel = filemodel;
-	sus->verb = verb;
 	sus->next = next;
 	sus->error = error;
 	sus->a = a;

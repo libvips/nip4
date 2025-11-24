@@ -37,15 +37,49 @@
         "/share/COPYING",
         "/share/RELEASE.txt",
         "/share/cmake",
-        "/bin/smem",
+
+	"/bin/brotli",
+	"/bin/bsdcat",
+	"/bin/bsdcpio",
+	"/bin/bsdtar",
+	"/bin/bsdunzip",
+	"/bin/cookbook",
+	"/bin/dcm-dump",
+	"/bin/dcm-getframe",
+	"/bin/exr2aces",
+	"/bin/exrenvmap",
+	"/bin/exrheader",
+	"/bin/exrinfo",
+	"/bin/exrmakepreview",
+	"/bin/exrmaketiled",
+	"/bin/exrmanifest",
+	"/bin/exrmetrics",
+	"/bin/exrmultipart",
+	"/bin/exrmultiview",
+	"/bin/exrstdattr",
+	"/bin/fitscopy",
+	"/bin/fitsverify",
+	"/bin/imcopy",
+	"/bin/libdeflate-gunzip",
+	"/bin/libdeflate-gzip",
+	"/bin/nip4-batch",
+	"/bin/openslide-quickhash1sum",
+	"/bin/openslide-show-properties",
+	"/bin/openslide-write-png",
+	"/bin/opj_compress",
+	"/bin/opj_decompress",
+	"/bin/opj_dump",
+	"/bin/slidetool",
         "/bin/fpack",
         "/bin/funpack",
+        "/bin/smem",
         "/bin/speed",
         "/bin/vips",
-        "/bin/vipsheader",
         "/bin/vipsedit",
+        "/bin/vipsheader",
         "/bin/vipsprofile",
         "/bin/vipsthumbnail"
+
     ],
     "modules" : [
 
@@ -284,6 +318,36 @@
         },
 
         {
+            "name" : "libultrahdr",
+            "builddir" : true,
+            "buildsystem" : "cmake-ninja",
+            "build-options" : {
+                "config-opts" : [
+                    "-DCMAKE_INSTALL_LIBDIR=lib",
+                    "-DUHDR_BUILD_BENCHMARK=OFF",
+                    "-DUHDR_BUILD_DEPS=OFF",
+                    "-DUHDR_BUILD_EXAMPLES=OFF",
+                    "-DUHDR_BUILD_FUZZERS=OFF",
+                    "-DUHDR_BUILD_JAVA=OFF",
+                    "-DUHDR_BUILD_PACKAGING=OFF",
+                    "-DUHDR_BUILD_TESTS=OFF",
+                    "-DUHDR_ENABLE_GLES=OFF",
+                    "-DUHDR_ENABLE_LOGS=OFF",
+                    "-DUHDR_ENABLE_WERROR=OFF",
+                    "-DUHDR_WRITE_ISO=ON",
+                    "-DUHDR_WRITE_XMP=OFF"
+                ]
+            },
+            "sources" : [
+                {
+                    "type" : "git",
+                    "url" : "https://github.com/google/libultrahdr.git",
+                    "commit" : "5ed39d67cd31d254e84ebf76b03d4b7bcc12e2f7"
+                }
+            ]
+        },
+
+        {
             "name" : "uthash",
             "buildsystem" : "simple",
             "build-commands" : [
@@ -376,7 +440,7 @@
                 {
                     "type" : "git",
                     "url" : "https://github.com/libvips/libvips.git",
-                    "commit" : "2df097b0f3d8ca6794073d604628371bed718dff"
+                    "commit" : "698159ecc6e0d4428316388f783c2fa66a7a17fd"
                 }
             ]
         },
@@ -401,14 +465,11 @@
             "name" : "nip4",
             "builddir" : true,
             "buildsystem" : "meson",
-            "config-opts" : [
-                "--buildtype=release"
-            ],
             "sources" : [
                 {
                     "type" : "git",
                     "url" : "https://github.com/jcupitt/nip4.git",
-                    "tag" : "v9.0.13-2"
+                    "commit" : "fb6371083bbbfe0e7147ceea238fca3c00d6e15f"
                 }
             ]
         }

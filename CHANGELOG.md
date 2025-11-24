@@ -1,5 +1,15 @@
 ## master
 
+## 9.0.15 2025/11/22
+
+- pattern matching rewrite
+- add multiple defs and parameter pattern match to compiler
+- add filemodel::new_from_file, rework filemodel_open
+- reloading a toolkit now deletes all defs, then does load ... adding a new
+  def to a func across a parse unit is now an error
+
+## 9.0.14 2025/10/25
+
 - fix load cancel
 - disable leak test on shutdown in release builds
 - fix Magick on windows with better quoting

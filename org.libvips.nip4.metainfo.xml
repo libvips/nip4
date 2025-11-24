@@ -57,6 +57,30 @@
 
   <releases>
 
+    <release version="9.0.15" date="2025-11-22">
+      <description>
+        <p>
+
+            This build improves nip4's programming language with argument
+            pattern matching and function overloads.
+
+        </p>
+      </description>
+    </release>
+
+    <release version="9.0.14" date="2025-10-25">
+      <description>
+        <p>
+
+            This version fixes the Magick menu, improves load cancel, and
+            improves the display of computed animated images. There are
+            a lot of fixes to the backend with better startup and shutdown
+            speed, a new vips8 builtin system, lazy batch output, and lazy ++.
+
+        </p>
+      </description>
+    </release>
+
     <release version="9.0.13" date="2025-09-20">
       <description>
         <p>
@@ -73,9 +97,9 @@
       <description>
         <p>
 
-		This version has many image display improvements, an EXE icon
-		on windows, high-DPI support, better group and ungroup, better
-		row drag, and a much better toolkit menu.
+        This version has many image display improvements, an EXE icon
+        on windows, high-DPI support, better group and ungroup, better
+        row drag, and a much better toolkit menu.
 
         </p>
       </description>
@@ -85,9 +109,9 @@
       <description>
         <p>
 
-		This version has a rewritten tilecache which should be o
-		dramatically faster in many cases. Flicker on updates should
-		also be gone. Plus many small fixes, see the CHANGELOG.
+        This version has a rewritten tilecache which should be o
+        dramatically faster in many cases. Flicker on updates should
+        also be gone. Plus many small fixes, see the CHANGELOG.
 
         </p>
       </description>
@@ -97,11 +121,11 @@
       <description>
         <p>
 
-		This version adds better OME-TIFF handling (along with other
-		image display improvements), better menu state initialisation,
-		and more view properties are shared with thumbnails. It adds
-		"Merge column" and "Merge tab" submenus. Region manipulation
-		during recomputation is now much more responsive.
+        This version adds better OME-TIFF handling (along with other
+        image display improvements), better menu state initialisation,
+        and more view properties are shared with thumbnails. It adds
+        "Merge column" and "Merge tab" submenus. Region manipulation
+        during recomputation is now much more responsive.
 
         </p>
       </description>

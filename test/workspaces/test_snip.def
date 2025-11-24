@@ -15,7 +15,7 @@ fmts = [
 ];
 
 // we need a to_real that does images as well
-to_real x
+to_real2 x
     = abs x, is_complex x
     = mean x, is_Image x
     = x;
@@ -33,9 +33,9 @@ test_unary op_name fn
         message = join_sep " " (map print [
             "unary", fname, op_name, x, "==", image, number, matrix
         ]);
-        image = (to_real @ fn @ ifmt @ to_image) x;
-        number = (to_real @ fn @ nfmt) x;
-        //matrix = (to_real @ fn @ ifmt @ to_matrix) x;
+        image = (to_real2 @ fn @ ifmt @ to_image) x;
+        number = (to_real2 @ fn @ nfmt) x;
+        //matrix = (to_real2 @ fn @ ifmt @ to_matrix) x;
         matrix = image;
     }
 }
@@ -52,11 +52,56 @@ test_binary op_name fn
         message = join_sep " " (map print [
             "binary", fname, x, op_name, y, "==", image, number, matrix
         ]);
-        image = to_real (fn ((ifmt @ to_image) x) ((ifmt @ to_image) y));
-        number = to_real (fn (nfmt x) (nfmt y));
-        //matrix = to_real (fn ((ifmt @ to_matrix) x) ((ifmt @ to_matrix) y));
+        image = to_real2 (fn ((ifmt @ to_image) x) ((ifmt @ to_image) y));
+        number = to_real2 (fn (nfmt x) (nfmt y));
+        //matrix = to_real2 (fn ((ifmt @ to_matrix) x) ((ifmt @ to_matrix) y));
         matrix = image;
     }
+}
+
+test_deconstruct = [
+    [test_deconstruct, "deconstruct"],
+    [test_struct_deconstruct, "structure deconstruct"],
+    [test_arg_deconstruct, "argument deconstruct"],
+    [test_list_deconstruct, "list deconstruct"],
+    [test_arg_list_deconstruct, "arg list deconstruct"]
+]
+{
+    [a] = [12];
+    test_deconstruct = a == 12;
+
+    [12, (13, b)] = [12, (13, 14)];
+    test_struct_deconstruct = b == 14;
+
+    fred [a] = 12;
+    test_arg_deconstruct = fred [99] == 12;
+
+    c:d = [1, 2];
+    test_list_deconstruct = c == 1 && d == [2];
+
+    jim (a:x) = a:[1, 2];
+    test_arg_list_deconstruct = jim [3] == [3, 1, 2];
+}
+
+global_factorial 1 = 1;
+global_factorial n = n * global_factorial (n - 1);
+
+test_multidef = [
+    [test_local_multidef, "local multiple definitions"],
+    [test_global_multidef, "global multiple definitions"],
+    [test_multidef_list_pattern, "list pattern multiple definitions"]
+]
+{
+    factorial 1 = 1;
+    factorial n = n * factorial (n - 1);
+    test_local_multidef = factorial 3 == 6;
+
+    test_global_multidef = global_factorial 3 == 6;
+
+    foldr fn st [] = st;
+    foldr fn st (x:xs) = fn x (foldr fn st xs);
+    sum = foldr add 0;
+    test_multidef_list_pattern = sum [1..10] == 55;
 }
 
 tests = concat [
@@ -72,6 +117,8 @@ tests = concat [
     test_unary "constant multiplied by" (converse multiply 7),
     test_unary "constant subtracted from" (subtract 4),
     test_unary "subtract constant" (converse subtract 4),
+    test_deconstruct,
+    test_multidef,
     [
         ["" ++ "a" == "a", "concat"],
         [hd [1, error "nope"] == 1, "lazy hd"]
