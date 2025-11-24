@@ -250,32 +250,6 @@ Vector value = class
             has_real x &&
             op.type == Operator_type.ARITHMETIC],
 
-<<<<<<< HEAD
-        // need extra length check
-        [this.Vector (map bool_to_real
-            (map_binaryl op.fn this.value x.value)),
-            is_Vector x &&
-            len value == len x.value &&
-            op.type == Operator_type.RELATIONAL],
-        [this.Vector (map bool_to_real
-            (map_binaryl op.fn this.value (get_real x))),
-            has_real x &&
-            op.type == Operator_type.RELATIONAL],
-        [this.Vector (op.fn this.value x.value),
-            is_Vector x &&
-            len value == len x.value &&
-            op.type == Operator_type.COMPOUND_REWRAP],
-        [x.Image (vec op'.op_name x.value value),
-            is_Image x],
-        [vec op'.op_name x value,
-            is_image x],
-        [op.fn this.value x,
-            is_real x]
-    ] ++ super.oo_binary_table op x
-    {
-        op' = oo_converse op;
-    };
-=======
 		// need extra length check
 		[this.Vector (map bool_to_real
 			(map_binaryl op.fn this.value x.value)),
@@ -299,7 +273,6 @@ Vector value = class
 	{
 		op' = oo_converse op;
 	};
->>>>>>> main
 
     oo_unary_table op = [
         [this.Vector (map_unaryl op.fn this.value),
@@ -953,6 +926,8 @@ Image value = class
             op.op_name == "if_then_else"],
         [wrap (op.fn this.value (get_image x)),
             has_image x],
+        [wrap (vec op.op_name this.value x.value),
+            is_Vector x],
         [wrap (op.fn this.value (get_number x)),
             has_number x],
         // if it's not a class on the RHS, handle here ... just apply and
@@ -970,7 +945,6 @@ Image value = class
                 !is_image x
             = this.Image x;
 
-<<<<<<< HEAD
         join_result_image
             = value ++ new_stuff, op.op_name == "join"
             = new_stuff ++ value
@@ -983,37 +957,6 @@ Image value = class
                 $xoffset => xoffset,
                 $yoffset => yoffset
             ] width height;
-=======
-	// operator overloading
-	// (op Image Vector) done in Vector class
-	oo_binary_table op x = [
-		// handle image ++ constant here
-		[wrap join_result_image,
-			(has_real x || is_Vector x) &&
-			(op.op_name == "join" || op.op_name == "join'")],
-		[wrap ite_result_image,
-			op.op_name == "if_then_else"],
-		[wrap (op.fn this.value (get_image x)),
-			has_image x],
-		[wrap (op.fn this.value (get_number x)),
-			has_number x],
-        [wrap (vec op.op_name this.value x.value),
-            is_Vector x],
-		// if it's not a class on the RHS, handle here ... just apply and
-		// rewrap
-		[wrap (op.fn this.value x),
-			!is_class x]
-		// all other cases handled by other classes
-	] ++ super.oo_binary_table op x
-	{
-		// wrap the result with this
-		// x can be a non-image, eg. compare "Image v == []" vs.
-		// "Image v == 12"
-		wrap x
-			= x, op.type == Operator_type.COMPOUND ||
-				!is_image x
-			= this.Image x;
->>>>>>> main
 
             new_bands
                 = get_bands x, has_bands x
