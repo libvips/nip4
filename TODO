@@ -1,10 +1,9 @@
-check these:
+- try
 
-	both modified:   TODO
-	both modified:   share/nip4/start/Image.def
-	both modified:   share/nip4/start/_stdenv.def
-	both modified:   share/nip4/start/_types.def
-
+    cd x/y/z
+    nip4
+    save workspace
+    save dialog defaults to Home, should be x/y/z
 
 # menu redesign
 
