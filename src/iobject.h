@@ -79,7 +79,7 @@ typedef struct _iObjectClass {
 
 	/* Try and say something useful about us.
 	 */
-	void (*info)(iObject *, VipsBuf *);
+	void (*info)(iObject *, VipsBuf *, int indent);
 
 	/* Called on _changed() to update the caption. Define this if you want
 	 * the caption to be an explanatory note about the object.
@@ -97,7 +97,7 @@ typedef struct _iObjectClass {
 
 void *iobject_destroy(iObject *iobject);
 void *iobject_changed(iObject *iobject);
-void *iobject_info(iObject *iobject, VipsBuf *);
+void *iobject_info(iObject *iobject, VipsBuf *buf, int indent);
 
 GType iobject_get_type(void);
 
@@ -106,5 +106,6 @@ void *iobject_print(iObject *iobject);
 void iobject_set(iObject *iobject, const char *name, const char *caption);
 void iobject_sink(iObject *iobject);
 void iobject_ref_sink(iObject *iobject);
-void iobject_dump(iObject *iobject);
+void iobject_dump(iObject *iobject, int indent);
 const char *iobject_get_user_name(iObject *object);
+void iobject_leak(void);

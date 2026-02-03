@@ -30,6 +30,7 @@
 /*
 #define DEBUG_VERBOSE
 #define DEBUG
+#define DEBUG_COMPAT
  */
 
 #include "nip4.h"
@@ -231,7 +232,7 @@ gboolean
 workspace_is_empty(Workspace *ws)
 {
 	return workspace_map_symbol(ws,
-			   (symbol_map_fn) workspace_is_empty_sub, NULL) == NULL;
+	   (symbol_map_fn) workspace_is_empty_sub, NULL) == NULL;
 }
 
 /* Map a function over all selected rows in a workspace.
@@ -526,7 +527,8 @@ workspace_add_def(Workspace *ws, const char *str)
 	printf("workspace_add_def: %s\n", str);
 #endif /*DEBUG*/
 
-	if (!str || strspn(str, WHITESPACE) == strlen(str))
+	if (!str ||
+		strspn(str, WHITESPACE) == strlen(str))
 		return NULL;
 
 	/* Try parsing as a "fred = 12" style def.
@@ -550,13 +552,7 @@ workspace_add_def(Workspace *ws, const char *str)
 		/* Another parse error.
 		 */
 		expr_error_get(sym->expr);
-
-		/* Block changes to error_string ... symbol_destroy()
-		 * can set this for compound objects.
-		 */
-		error_block();
 		IDESTROY(sym);
-		error_unblock();
 
 		return NULL;
 	}
@@ -565,9 +561,10 @@ workspace_add_def(Workspace *ws, const char *str)
 	 *
 	 * Don't set modified on the ws, we might be here from parse.
 	 */
-	if (!sym->expr->row)
+	if (!sym->expr->row) {
 		(void) row_new(col->scol, sym, &sym->expr->root);
-	symbol_made(sym);
+		symbol_made(sym);
+	}
 
 	return sym;
 }
@@ -592,14 +589,12 @@ workspace_add_def_recalc(Workspace *ws, const char *str)
 		/* Eval error.
 		 */
 		expr_error_get(sym->expr);
-		error_block();
 		IDESTROY(sym);
-		error_unblock();
 
 		return NULL;
 	}
 
-	/* Jump to column containing object.
+	/* Scroll to bottom of column containing object.
 	 */
 	column_set_open(col, TRUE);
 	column_scrollto(col, MODEL_SCROLL_BOTTOM);
@@ -933,9 +928,9 @@ workspace_build_compat_fn(const char *filename)
 		compat_minor[n_compat] = minor;
 		n_compat += 1;
 
-#ifdef DEBUG
+#ifdef DEBUG_COMPAT
 		printf("\tfound major = %d, minor = %d\n", major, minor);
-#endif /*DEBUG*/
+#endif /*DEBUG_COMPAT*/
 	}
 
 	return NULL;
@@ -949,6 +944,9 @@ workspace_build_compat(void)
 	if (n_compat > 0)
 		return;
 
+#ifdef DEBUG_COMPAT
+	printf("workspace_build_compat: searching ...\n");
+#endif /*DEBUG_COMPAT*/
 	path_map_dir("$VIPSHOME/share/" PACKAGE "/compat", "*.*",
 		(path_map_fn) workspace_build_compat_fn, NULL);
 }
@@ -962,9 +960,9 @@ workspace_have_compat(int major, int minor, int *best_major, int *best_minor)
 	int i;
 	int best;
 
-#ifdef DEBUG
+#ifdef DEBUG_COMPAT
 	printf("workspace_have_compat: searching for %d.%d\n", major, minor);
-#endif /*DEBUG*/
+#endif /*DEBUG_COMPAT*/
 
 	/* Sets of ws compatibility defs cover themselves and any earlier
 	 * releases, as far back as the next set of compat defs. We need to
@@ -985,9 +983,9 @@ workspace_have_compat(int major, int minor, int *best_major, int *best_minor)
 	if (best == -1)
 		return 0;
 
-#ifdef DEBUG
+#ifdef DEBUG_COMPAT
 	printf("\tfound %d.%d\n", compat_major[best], compat_minor[best]);
-#endif /*DEBUG*/
+#endif /*DEBUG_COMPAT*/
 
 	if (best_major)
 		*best_major = compat_major[best];
@@ -1033,10 +1031,10 @@ workspace_load_compat(Workspace *ws, int major, int minor)
 		}
 		path_free2(path);
 
-#ifdef DEBUG
+#ifdef DEBUG_COMPAT
 		printf("workspace_load_compat: loaded %d.%d\n",
 			best_major, best_minor);
-#endif /*DEBUG*/
+#endif /*DEBUG_COMPAT*/
 	}
 
 	return TRUE;

@@ -1,4 +1,16 @@
-## master
+## 9.0.16 2026/02/01
+
+- add multiple defs support to program window
+- must hold ctrl to drag rows
+- improve empty mainwindow culling
+- fix fwd compatibility of back compat menus
+- rewrite of list comprehensions fixes scoping
+- lambdas support pattern matching
+- deferred compile helps startup time
+- rename nip4-batch as "snip"
+- better mark drag
+- no VIPSHOME env var in flatpak
+- flatpak build includes IM
 
 ## 9.0.15 2025/11/22
 

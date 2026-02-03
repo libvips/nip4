@@ -491,26 +491,28 @@ row_add_dirty_child_name(Link *link, VipsBuf *buf)
 }
 
 static void
-row_info(iObject *iobject, VipsBuf *buf)
+row_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	Row *row = ROW(iobject);
 
+	vips_buf_appendf(buf, "%*c", indent, ' ');
 	vips_buf_appends(buf, _("Name"));
 	vips_buf_appends(buf, ": ");
 	row_qualified_name(row, buf);
 	vips_buf_appends(buf, "\n");
 
 	if (row->expr)
-		iobject_info(IOBJECT(row->expr), buf);
+		iobject_info(IOBJECT(row->expr), buf, indent);
 	if (row->child_rhs &&
 		row->child_rhs->itext)
-		iobject_info(IOBJECT(row->child_rhs->itext), buf);
+		iobject_info(IOBJECT(row->child_rhs->itext), buf, indent);
 	if (row->child_rhs &&
 		row->child_rhs->graphic)
-		iobject_info(IOBJECT(row->child_rhs->graphic), buf);
+		iobject_info(IOBJECT(row->child_rhs->graphic), buf, indent);
 	if (row->top_row->sym) {
 		if (row->top_row->sym->topchildren) {
 			row_qualified_name(row, buf);
+			vips_buf_appendf(buf, "%*c", indent, ' ');
 			vips_buf_appends(buf, " ");
 			/* Expands to eg. "B1 refers to: B2, B3".
 			 */
@@ -522,6 +524,7 @@ row_info(iObject *iobject, VipsBuf *buf)
 		}
 		if (row->top_row->sym->topparents) {
 			row_qualified_name(row, buf);
+			vips_buf_appendf(buf, "%*c", indent, ' ');
 			vips_buf_appends(buf, " ");
 			/* Expands to eg. "B1 is referred to by: B2, B3".
 			 */
@@ -539,6 +542,7 @@ row_info(iObject *iobject, VipsBuf *buf)
 
 		if (sym->ndirtychildren) {
 			row_qualified_name(row, buf);
+			vips_buf_appendf(buf, "%*c", indent, ' ');
 			vips_buf_appends(buf, " ");
 			vips_buf_appends(buf, _("is blocked on"));
 			vips_buf_appends(buf, ": ");
@@ -1481,51 +1485,44 @@ row_regenerate(Row *row)
 	Expr *expr = row->expr;
 	PElement base;
 
-	/* Regenerate any compiled code.
-	 */
 	if (expr->compile) {
 		PEPOINTE(&base, &expr->compile->base);
+		PElement *root = &expr->root;
 
-		if (!PEISNOVAL(&base)) {
-			PElement *root = &expr->root;
-
-			if (row == row->top_row) {
-				/* Recalcing base of tally display ... not a
-				 * class member, must be a sym with a value.
-				 */
-				gboolean res;
-
-				res = reduce_regenerate(expr, root);
-				expr_new_value(expr);
-
-				if (!res)
-					return FALSE;
-			}
-			else {
-				/* Recalcing a member somewhere inside ...
-				 * regen (member this) pair. Get the "this"
-				 * for the enclosing class instance ... the
-				 * top one won't always be right (eg. for
-				 * local classes); the enclosing one should
-				 * be the same as the most enclosing this.
-				 */
-				Subcolumn *scol = row_get_subcolumn(row);
-				Row *this = scol->this;
-				gboolean res;
-
-				res = reduce_regenerate_member(expr, &this->expr->root, root);
-				expr_new_value(expr);
-
-				if (!res)
-					return FALSE;
-			}
-
-			/* We may have made a new class instance ... all our
-			 * children need to update their heap pointers.
+		if (row == row->top_row) {
+			/* Recalcing base of tally display ... not a class member, must
+			 * be a sym with a value.
 			 */
-			if (heapmodel_new_heap(HEAPMODEL(row), root))
+			gboolean res;
+
+			res = reduce_regenerate(expr, root);
+			expr_new_value(expr);
+
+			if (!res)
 				return FALSE;
 		}
+		else {
+			/* Recalcing a member somewhere inside ...  regen (member this)
+			 * pair. Get the "this" for the enclosing class instance ... the
+			 * top one won't always be right (eg. for local classes); the
+			 * enclosing one should be the same as the most enclosing this.
+			 */
+			Subcolumn *scol = row_get_subcolumn(row);
+			Row *this = scol->this;
+			gboolean res;
+
+			res = reduce_regenerate_member(expr, &this->expr->root, root);
+			expr_new_value(expr);
+
+			if (!res)
+				return FALSE;
+		}
+
+		/* We may have made a new class instance ... all our
+		 * children need to update their heap pointers.
+		 */
+		if (heapmodel_new_heap(HEAPMODEL(row), root))
+			return FALSE;
 	}
 
 	return TRUE;
@@ -1554,7 +1551,8 @@ row_recomp_row(Row *row)
 
 	/* Parse and compile any changes to our text since we last came through.
 	 */
-	if (rhs && rhs->itext &&
+	if (rhs &&
+		rhs->itext &&
 		heapmodel_update_heap(HEAPMODEL(rhs->itext)))
 		return FALSE;
 

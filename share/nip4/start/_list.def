@@ -123,12 +123,8 @@ foldl1 fn l
  * foldr fn st [a,b..z] = (a fn (b fn (.. (z fn st))))
  * foldr :: (* -> ** -> **) -> ** -> [*] -> **
  */
-foldr fn st l
-	= st, l == []
-	= fn x (foldr fn st xs)
-{
-	x:xs = l;
-}
+foldr fn st [] = st;
+foldr fn st a:x = fn a (foldr fn st x);
 
 /* foldr1 fn l: like foldr, but use the last element as the start value
  *

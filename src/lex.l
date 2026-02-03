@@ -234,7 +234,7 @@ FALSE {
 \<\= { BEGIN 0; return TK_LESSEQ; }
 \> { BEGIN 0; return TK_MORE; }
 \>\= { BEGIN 0; return TK_MOREEQ; }
-\=\> { BEGIN 0; return TK_TO; }
+\=\> { BEGIN 0; return TK_MAP; }
 \& { BEGIN 0; return TK_BAND; }
 \&\& { BEGIN 0; return TK_LAND; }
 \:\: { BEGIN 0; return TK_SUCHTHAT; }

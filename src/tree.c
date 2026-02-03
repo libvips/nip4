@@ -206,7 +206,6 @@ tree_class_new(Compile *compile)
 	(void) symbol_user_init(cons);
 	(void) compile_new_local(cons->expr);
 	cons->expr->compile->tree = tree_leafsym_new(compile, compile->sym);
-	symbol_made(cons);
 
 	return no;
 }

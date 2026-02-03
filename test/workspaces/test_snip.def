@@ -1,3 +1,5 @@
+#!/usr/bin/env snip
+
 // all the image formats we test, and their matching number format
 // we can't use uchar as a number format directly since it'll become 'a' or
 // whatever and arithmetic ops will start failing
@@ -104,6 +106,35 @@ test_multidef = [
     test_multidef_list_pattern = sum [1..10] == 55;
 }
 
+test_lcomp = [
+    [test_lconst, "list const in lcomp"],
+    [test_nested_lconst, "nested list const in lcomp"],
+    [test_nested_lcomp, "nested lcomp"],
+    [test_multiple_nested_lconst, "multiple nested list const in lcomp"],
+    [test_nested_filter_lcomp, "nested filtered lcomp"],
+    [test_multiple_filter_lcomp, "multiple filtered lcomp"]
+]
+{
+    test_lconst = [[y] :: y <- [1..3]] == [[1], [2], [3]];
+    test_nested_lconst = [[[y]] :: y <- [1..3]] == [[[1]], [[2]], [[3]]];
+    test_nested_lcomp = [[[x, y] :: x <- [1..3]] :: y <- [1..3]] ==
+        [[[1, 1], [2, 1], [3, 1]],
+         [[1, 2], [2, 2], [3, 2]],
+         [[1, 3], [2, 3], [3, 3]]];
+    test_multiple_nested_lconst = [[[[x, y]]] :: y <- [1..3]; x <- [1..3]] ==
+        [[[[1, 1]]], [[[2, 1]]], [[[3, 1]]],
+         [[[1, 2]]], [[[2, 2]]], [[[3, 2]]],
+         [[[1, 3]]], [[[2, 3]]], [[[3, 3]]]];
+    test_nested_filter_lcomp =
+        [[[x, y] :: x <- [1..3]; x != y] :: y <- [1..3]] ==
+            [[[2, 1], [3, 1]],
+             [[1, 2], [3, 2]],
+             [[1, 3], [2, 3]]];
+    test_multiple_filter_lcomp =
+        [[x, y] :: x <- [1..3]; y <- [1..3]; x != y] ==
+            [[1, 2], [1, 3], [2, 1], [2, 3], [3, 1], [3, 2]];
+}
+
 tests = concat [
     test_binary "add" add,
     test_binary "subtract" subtract,
@@ -119,6 +150,7 @@ tests = concat [
     test_unary "subtract constant" (converse subtract 4),
     test_deconstruct,
     test_multidef,
+    test_lcomp,
     [
         ["" ++ "a" == "a", "concat"],
         [hd [1, error "nope"] == 1, "lazy hd"]

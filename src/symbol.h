@@ -3,135 +3,139 @@
 
 /*
 
-	Copyright (C) 1991-2003 The National Gallery
+    Copyright (C) 1991-2003 The National Gallery
 
-	This program is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License along
-	with this program; if not, write to the Free Software Foundation, Inc.,
-	51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
  */
 
 /*
 
-	These files are distributed with VIPS - http://www.vips.ecs.soton.ac.uk
+    These files are distributed with VIPS - http://www.vips.ecs.soton.ac.uk
 
  */
 
 #define SYMBOL_TYPE (symbol_get_type())
 #define SYMBOL(obj) \
-	(G_TYPE_CHECK_INSTANCE_CAST((obj), SYMBOL_TYPE, Symbol))
+    (G_TYPE_CHECK_INSTANCE_CAST((obj), SYMBOL_TYPE, Symbol))
 #define SYMBOL_CLASS(klass) \
-	(G_TYPE_CHECK_CLASS_CAST((klass), SYMBOL_TYPE, SymbolClass))
+    (G_TYPE_CHECK_CLASS_CAST((klass), SYMBOL_TYPE, SymbolClass))
 #define IS_SYMBOL(obj) \
-	(G_TYPE_CHECK_INSTANCE_TYPE((obj), SYMBOL_TYPE))
+    (G_TYPE_CHECK_INSTANCE_TYPE((obj), SYMBOL_TYPE))
 #define IS_SYMBOL_CLASS(klass) \
-	(G_TYPE_CHECK_CLASS_TYPE((klass), SYMBOL_TYPE))
+    (G_TYPE_CHECK_CLASS_TYPE((klass), SYMBOL_TYPE))
 #define SYMBOL_GET_CLASS(obj) \
-	(G_TYPE_INSTANCE_GET_CLASS((obj), SYMBOL_TYPE, SymbolClass))
+    (G_TYPE_INSTANCE_GET_CLASS((obj), SYMBOL_TYPE, SymbolClass))
 
 /* The types of symbol we can have.
  */
 typedef enum {
-	SYM_VALUE,		   /* Symbol with a value attached */
-	SYM_PARAM,		   /* A parameter to a user function */
-	SYM_ZOMBIE,		   /* A referred to but not defined */
-	SYM_WORKSPACE,	   /* A loaded workspace */
-	SYM_WORKSPACEROOT, /* Base of all workspaces */
-	SYM_ROOT,		   /* The root symbol */
-	SYM_BUILTIN,	   /* A reference to a built-in function */
+    SYM_VALUE,         /* Symbol with a value attached */
+    SYM_PARAM,         /* A parameter to a user function */
+    SYM_ZOMBIE,        /* A referred to but not defined */
+    SYM_WORKSPACE,     /* A loaded workspace */
+    SYM_WORKSPACEROOT, /* Base of all workspaces */
+    SYM_ROOT,          /* The root symbol */
+    SYM_BUILTIN,       /* A reference to a built-in function */
 } SymbolType;
 
 /* A symbol.
  */
 struct _Symbol {
-	Filemodel parent_class;
+    Filemodel parent_class;
 
-	/* The type of this symbol.
-	 */
-	SymbolType type;
+    /* The type of this symbol.
+     */
+    SymbolType type;
 
-	/* Track during parse. A list of pointers to pointers to this
-	 * symbol which we need to patch if we resolve to an outer scope.
-	 */
-	GSList *patch;
+    /* Track during parse. A list of pointers to pointers to this
+     * symbol which we need to patch if we resolve to an outer scope.
+     */
+    GSList *patch;
 
-	/* Main expression for this sym. All expressions are icontainer
-	 * children of us.
-	 */
-	Expr *expr;
+    /* Main expression for this sym. All expressions are icontainer
+     * children of us.
+     */
+    Expr *expr;
 
-	/* Base of graph for value of this symbol. Use sym->expr->root to get
-	 * value though .. we just hold pointer for GC here. Expressions on
-	 * ext_expr have their GC handled by their enclosing Subcolumn.
-	 */
-	Element base; /* Value for this expr */
+    /* Base of graph for value of this symbol. Use sym->expr->root to get
+     * value though .. we just hold pointer for GC here. Expressions on
+     * ext_expr have their GC handled by their enclosing Subcolumn.
+     */
+    Element base;           /* Value for this expr */
 
-	/* Recomputation links. Use these to work out what to build next.
-	 */
-	gboolean dirty;	 /* True if this sym needs recalc */
-	GSList *parents; /* Compiles which refer to this sym */
+    /* Recomputation links. Use these to work out what to build next.
+     */
+    gboolean dirty;         /* True if this sym needs recalc */
+    GSList *parents;        /* Compiles which refer to this sym */
 
-	GSList *topchildren; /* For top syms, all top-level children */
-	GSList *topparents;	 /* For top syms, all top-level parents */
-	int ndirtychildren;	 /* Number of dirty top syms we refer to */
-	gboolean leaf;		 /* True for in recomp set */
+    GSList *topchildren;    /* For top syms, all top-level children */
+    GSList *topparents;     /* For top syms, all top-level parents */
+    int ndirtychildren;     /* Number of dirty top syms we refer to */
+    gboolean leaf;          /* True for in recomp set */
 
-	/* This symbol will need a codegen pass at the end of this parse unit.
-	 */
-	gboolean needs_codegen;
+    /* This symbol will need a codegen pass at the end of this parse unit.
+     */
+    gboolean needs_codegen;
 
-	/* This is a generated symbol, like $$result, $$fn1, whatever.
-	 */
-	gboolean generated;
+    /* This is a generated symbol, like $$listN, $$fn1, whatever, something
+     * that will be compiled.
+     */
+    gboolean generated;
 
-	/* If this func has multiple defs, chain them on this.
-	 */
-	Symbol *next_def;
+    /* If this func has multiple defs, chain them on this.
+     */
+    Symbol *next_def;
 
-	/* A temporary intermediate symbol generated during parse to hold
-	 * stuff until we need it. Don't generate code for these.
-	 */
-	gboolean placeholder;
+    /* A temporary intermediate symbol generated during parse to hold
+     * stuff until we need it. Don't generate code for these.
+     */
+    gboolean placeholder;
 
-	/* X-tras for definitions.
-	 */
-	Tool *tool; /* Tool and toolkit defined in */
+    /* X-tras for definitions.
+     */
 
-	/* X-tras for SYM_BUILTIN ... our function.
-	 */
-	BuiltinInfo *builtin;
+    /* Tool and toolkit defined in.
+     */
+    Tool *tool;
 
-	/* For WORKSPACEROOT ... the wsr we represent.
-	 */
-	Workspaceroot *wsr;
+    /* X-tras for SYM_BUILTIN ... our function.
+     */
+    BuiltinInfo *builtin;
 
-	/* For WORKSPACE ... the ws we represent.
-	 */
-	Workspace *ws;
+    /* For WORKSPACEROOT ... the wsr we represent.
+     */
+    Workspaceroot *wsr;
+
+    /* For WORKSPACE ... the ws we represent.
+     */
+    Workspace *ws;
 
 };
 
 typedef struct _SymbolClass {
-	FilemodelClass parent_class;
+    FilemodelClass parent_class;
 
-	/*
+    /*
 
-		new_value	sym->expr has a new value (this signal is
-				fwd'd from sym->expr)
+        new_value   sym->expr has a new value (this signal is
+                fwd'd from sym->expr)
 
-	 */
+     */
 
-	void (*new_value)(Symbol *sym);
+    void (*new_value)(Symbol *sym);
 } SymbolClass;
 
 GType symbol_get_type(void);
@@ -151,7 +155,7 @@ Symbol *symbol_get_last(Symbol *sym);
 
 void symbol_qualified_name(Symbol *sym, VipsBuf *buf);
 void symbol_qualified_name_relative(Symbol *context,
-	Symbol *sym, VipsBuf *buf);
+    Symbol *sym, VipsBuf *buf);
 void *symbol_name_error(Symbol *sym, VipsBuf *buf);
 const char *symbol_name(Symbol *sym);
 void *symbol_name_print(Symbol *sym);

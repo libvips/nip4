@@ -101,6 +101,7 @@ void compile_name(Compile *compile, VipsBuf *buf);
 
 typedef void *(*map_compile_fn)(Compile *, void *);
 Compile *compile_map_all(Compile *compile, map_compile_fn fn, void *a);
+Compile *compile_map_all_inner(Compile *compile, map_compile_fn fn, void *a);
 
 Symbol *compile_lookup(Compile *compile, const char *name);
 
@@ -118,21 +119,18 @@ Compile *compile_new_toplevel(Expr *expr);
 Compile *compile_new_local(Expr *expr);
 
 void *compile_object(Compile *compile);
-void *compile_codegen_toolkit(Toolkit *kit);
-void *compile_codegen_toplevel(Symbol *sym);
+void *compile_codegen(Compile *compile);
 
 void compile_error_set(Compile *compile);
 gboolean compile_check(Compile *compile);
 
 void compile_resolve_names(Compile *inner, Compile *outer);
+void compile_resolve_static(Symbol *sym);
 Symbol *compile_resolve_top(Symbol *sym);
 void compile_resolve_dynamic(Compile *tab, Compile *context);
 
 Symbol *compile_get_member(Compile *compile, const char *name);
 const char *compile_get_member_string(Compile *compile, const char *name);
-
-ParseNode *compile_copy_tree(Compile *fromscope, ParseNode *tree,
-	Compile *toscope);
 
 void compile_lcomp(Compile *compile);
 

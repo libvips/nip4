@@ -88,7 +88,20 @@ main_error_exit(const char *fmt, ...)
 		fprintf(stderr, "\n");
     }
 
+	if (main_option_verbose &&
+		expr_error_all)
+		for (GSList *p = expr_error_all; p; p = p->next) {
+			Expr *expr = (Expr *) p->data;
+
+			char txt[1024];
+			VipsBuf buf = VIPS_BUF_STATIC(txt);
+
+			expr_error_print(expr, &buf);
+			fprintf(stderr, "%s", vips_buf_all(&buf));
+		}
+
     main_shutdown();
+
     exit(1);
 }
 
@@ -231,13 +244,7 @@ main_set(const char *str)
         /* Another parse error.
          */
         expr_error_get(sym->expr);
-
-        /* Block changes to error_string ... symbol_destroy()
-         * can set this for compound objects.
-         */
-        error_block();
         IDESTROY(sym);
-        error_unblock();
 
         return FALSE;
     }
@@ -327,6 +334,13 @@ main_expression(const char *expression)
 int
 main(int argc, char **argv)
 {
+#ifdef FLATPAK
+	/* In flatpak builds, don't pick up VIPSHOME from the environ, we want the
+	 * value detected for this install.
+	 */
+	g_unsetenv("VIPSHOME");
+#endif /*FLATPAK*/
+
 	if (VIPS_INIT(argv[0]))
 		vips_error_exit("unable to start libvips");
 

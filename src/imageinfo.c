@@ -366,10 +366,11 @@ imageinfo_finalize(GObject *gobject)
 /* Make an info string about an imageinfo.
  */
 static void
-imageinfo_info(iObject *iobject, VipsBuf *buf)
+imageinfo_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	Imageinfo *imageinfo = IMAGEINFO(iobject);
 
+	vips_buf_appendf(buf, "%*c", indent, ' ');
 	vips_buf_appendi(buf, imageinfo->image);
 
 	/* Don't chain up to parent->info(), we don't want all the other

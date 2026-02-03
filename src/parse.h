@@ -90,7 +90,8 @@ enum yytokentype {
 	TK_EQ = 297,		 /* TK_EQ  */
 	TK_PEQ = 298,		 /* TK_PEQ  */
 	TK_PNOTEQ = 299,	 /* TK_PNOTEQ  */
-	TK_APPLICATION = 300 /* TK_APPLICATION  */
+	TK_APPLICATION = 300, /* TK_APPLICATION  */
+	TK_MAP = 301,	     /* TK_APPLICATION  */
 };
 typedef enum yytokentype yytoken_kind_t;
 #endif

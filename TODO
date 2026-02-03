@@ -145,22 +145,60 @@ check these:
 
 - add magick7 support to _magick.def
 
+- better start dir for file dialogs
+
+	should be cwd
+
+	a bit random right now, eg. mainwindow open and toolkit open start in
+	different places
+
+- "nip4 try.def x.ws" ought to work
+
+	only images and workspaces as CLI args right now
+
+- add "copy value" to rowview menu ... copy value display text to clipboard
+
+	render more text? truncation could be annoying
+
+- improve row layout (see notebook)
+
+- we heap_copy() the world when we make a row (all funcs copied), is this
+  necessary?
+
+- linear match
+
+	allow refine tie points + no-resize atr the same time
+
+	show computed transform
+
+- try
+
+	Edit toolkits ...
+	[a, b, c] = [1, 2, 3];
+	|>
+	add a space
+	|>
+
+  error: second def of "c"
+
+  probably OK -- we can always delete the three defs separately, and this has
+  to be a very rare case
+
+  add "delete tool"?
+
+- do row select on button up, and as part of the mainwindow event state
+  machine
+
+	same for up down buttons
+
+	same for textview flip to formula
+
+	need our own tiny subcolumnview event system
+
 - nicholas's bug report
 
-- lcomps leave stray unreffed symbols in "list unresolved"
-
-    Image_transform_item.Resize_item.Size_within_item.action.within ($SAVEDIR/start/Image.def:509)  refers to undefined symbol h
-    Image_transform_item.Resize_item.Size_within_item.action.within ($SAVEDIR/start/Image.def:509)  refers to undefined symbol w
-
-- rework pattern matching in lcomps
-
-- what does the programming window do for multiple defs?
-
-    probably need to follow next_def and concatenate them all
-
-- dir should hide $$vars
-
-- programming window is showing generated syms, like $$pattern_lhs0?
+- parse_onedef() was using single_definition, which also increments
+  tool_position, do we need to do that?
 
 - ban patterns in class parameters
 
@@ -192,6 +230,24 @@ check these:
     fred a:b:x = a + b;
 
 - remove remove prefs workspace stuff?
+
+- we could allow
+
+	fred x x = 12;
+
+  meaning, two args, must be equal
+
+	fred x [x, y, z] = y + z;
+
+  meaning first list element must equal first arg
+
+- make "About" non-modal and update on gc
+
+	use progress system?
+
+	add a new GC signal
+
+- remove prefs workspace stuff?
 
     things like max heap size should be settable ... maybe pres are useful?
 

@@ -51,17 +51,19 @@ managedfile_dispose(GObject *gobject)
 }
 
 static void
-managedfile_info(iObject *iobject, VipsBuf *buf)
+managedfile_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	Managedfile *managedfile = MANAGEDFILE(iobject);
 
-	vips_buf_appendf(buf, "managedfile->fp = %p\n", managedfile->file->fp);
-	vips_buf_appendf(buf, "managedfile->file->filename = %s\n",
+	vips_buf_appendf(buf, "%*cmanagedfile->fp = %p\n", indent, ' ',
+		managedfile->file->fp);
+	vips_buf_appendf(buf, "%*cmanagedfile->file->filename = %s\n", indent, ' ',
 		managedfile->file->fname);
-	vips_buf_appendf(buf, "managedfile->file->last_errno = %d\n",
+	vips_buf_appendf(buf, "%*cmanagedfile->file->last_errno = %d\n",
+		indent, ' ',
 		managedfile->file->last_errno);
 
-	IOBJECT_CLASS(managedfile_parent_class)->info(iobject, buf);
+	IOBJECT_CLASS(managedfile_parent_class)->info(iobject, buf, indent);
 }
 
 static void

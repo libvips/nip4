@@ -35,11 +35,57 @@
  * error, and extra informative text. For example "Unable to load file.",
  * "Read failed for file blah, permission denied.".
  */
-static char error_top_text[MAX_STRSIZE];
-static char error_sub_text[MAX_STRSIZE];
 
-VipsBuf error_top_buf = VIPS_BUF_STATIC(error_top_text);
-VipsBuf error_sub_buf = VIPS_BUF_STATIC(error_sub_text);
+/* Keep a stack of error logs, with push to create a new error level, and pop
+ * to drop the top one.
+ */
+#define MAX_ERROR_STACK (10)
+static int error_sp = 0;
+static VipsBuf error_top_buf[MAX_ERROR_STACK];
+static VipsBuf error_sub_buf[MAX_ERROR_STACK];
+
+void
+error_init(void)
+{
+	for (int i = 0; i < MAX_ERROR_STACK; i++) {
+		vips_buf_init_dynamic(&error_top_buf[i], MAX_ERROR_LENGTH);
+		vips_buf_init_dynamic(&error_sub_buf[i], MAX_ERROR_LENGTH);
+	}
+}
+
+void
+error_clear_nip(void)
+{
+#ifdef DEBUG_ERROR
+	printf("error_clear_nip\n");
+#endif /*DEBUG_ERROR*/
+
+	vips_buf_rewind(&error_top_buf[error_sp]);
+	vips_buf_rewind(&error_sub_buf[error_sp]);
+}
+
+void
+error_clear(void)
+{
+	error_clear_nip();
+	vips_error_clear();
+}
+
+void
+error_push(void)
+{
+	if (error_sp < MAX_ERROR_STACK - 1)
+		error_sp += 1;
+
+	error_clear_nip();
+}
+
+void
+error_pop(void)
+{
+	if (error_sp > 0)
+		error_sp -= 1;
+}
 
 /* Useful: Error message and quit. Emergencies only ... we don't tidy up
  * properly.
@@ -66,69 +112,24 @@ error(const char *fmt, ...)
 	exit(1);
 }
 
-/* Set this to block error messages. Useful if we've found an error, we want
- * to clean up, but we don't want any of the clean-up code to touch the error
- * buffer.
- */
-static int error_level = 0;
-
-void
-error_block(void)
-{
-	error_level++;
-}
-
-void
-error_unblock(void)
-{
-	g_assert(error_level);
-
-	error_level--;
-}
-
 /* Set an error buffer.
  */
 static void
 error_set(VipsBuf *buf, const char *fmt, va_list ap)
 {
-	if (!error_level) {
-		char txt[MAX_STRSIZE];
-		VipsBuf tmp = VIPS_BUF_STATIC(txt);
+	char txt[MAX_ERROR_LENGTH];
+	VipsBuf tmp = VIPS_BUF_STATIC(txt);
 
-		/* The string we write may contain itself ... write to an
-		 * intermediate, then copy to main.
-		 */
-		vips_buf_vappendf(&tmp, fmt, ap);
-
-		vips_buf_rewind(buf);
-		(void) vips_buf_appends(buf, vips_buf_all(&tmp));
+	/* The string we write may contain itself ... write to an
+	 * intermediate, then copy to main.
+	 */
+	vips_buf_vappendf(&tmp, fmt, ap);
+	vips_buf_rewind(buf);
+	(void) vips_buf_appends(buf, vips_buf_all(&tmp));
 
 #ifdef DEBUG_ERROR
-		printf("error: %p %s\n", buf, vips_buf_all(buf));
+	printf("error: %p %s\n", buf, vips_buf_all(buf));
 #endif /*DEBUG_ERROR*/
-	}
-}
-
-void
-error_clear_nip(void)
-{
-	if (!error_level) {
-		vips_buf_rewind(&error_top_buf);
-		vips_buf_rewind(&error_sub_buf);
-
-#ifdef DEBUG_ERROR
-		printf("error_clear_nip\n");
-#endif /*DEBUG_ERROR*/
-	}
-}
-
-void
-error_clear(void)
-{
-	if (!error_level) {
-		error_clear_nip();
-		vips_error_clear();
-	}
 }
 
 void
@@ -137,14 +138,13 @@ error_top(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	error_set(&error_top_buf, fmt, ap);
+	error_set(&error_top_buf[error_sp], fmt, ap);
 	va_end(ap);
 
 	/* We could use error_clear_nip() before calling error_set(), but that
 	 * fails if the arg to us uses the contents of either error buffer.
 	 */
-	if (!error_level)
-		vips_buf_rewind(&error_sub_buf);
+	vips_buf_rewind(&error_sub_buf[error_sp]);
 }
 
 void
@@ -153,7 +153,7 @@ error_sub(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	error_set(&error_sub_buf, fmt, ap);
+	error_set(&error_sub_buf[error_sp], fmt, ap);
 	va_end(ap);
 }
 
@@ -162,10 +162,10 @@ error_sub(const char *fmt, ...)
 void
 error_vips(void)
 {
-	if (!error_level && strlen(vips_error_buffer()) > 0) {
-		if (!vips_buf_is_empty(&error_sub_buf))
-			vips_buf_appendf(&error_sub_buf, "\n");
-		vips_buf_appendf(&error_sub_buf, "%s", vips_error_buffer());
+	if (strlen(vips_error_buffer()) > 0) {
+		if (!vips_buf_is_empty(&error_sub_buf[error_sp]))
+			vips_buf_appendf(&error_sub_buf[error_sp], "\n");
+		vips_buf_appendf(&error_sub_buf[error_sp], "%s", vips_error_buffer());
 		vips_error_clear();
 	}
 }
@@ -180,17 +180,17 @@ error_vips_all(void)
 const char *
 error_get_top(void)
 {
-	return vips_buf_all(&error_top_buf);
+	return vips_buf_all(&error_top_buf[error_sp]);
 }
 
 const char *
 error_get_sub(void)
 {
 	// remove any annoying trailing \n
-	while (vips_buf_removec(&error_sub_buf, '\n'))
+	while (vips_buf_removec(&error_sub_buf[error_sp], '\n'))
 			;
 
-	return vips_buf_all(&error_sub_buf);
+	return vips_buf_all(&error_sub_buf[error_sp]);
 }
 
 void

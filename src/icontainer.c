@@ -556,13 +556,13 @@ icontainer_finalize(GObject *gobject)
 }
 
 static void
-icontainer_info(iObject *iobject, VipsBuf *buf)
+icontainer_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	iContainer *icontainer = ICONTAINER(iobject);
 
-	vips_buf_appendf(buf, "pos = \"%d\"\n", icontainer->pos);
+	vips_buf_appendf(buf, "%*cpos = \"%d\"\n", indent, ' ', icontainer->pos);
 
-	IOBJECT_CLASS(icontainer_parent_class)->info(iobject, buf);
+	IOBJECT_CLASS(icontainer_parent_class)->info(iobject, buf, indent);
 }
 
 static void

@@ -1043,6 +1043,8 @@ workspaceview_drag_begin(GtkEventControllerMotion *self,
 	gdouble start_x, gdouble start_y, gpointer user_data)
 {
 	Workspaceview *wview = WORKSPACEVIEW(user_data);
+	Mainwindow *main = MAINWINDOW(view_get_window(VIEW(wview)));
+	guint modifiers = mainwindow_get_modifiers(main);
 
 	Columnview *title;
 	Columnview *cview;
@@ -1067,7 +1069,8 @@ workspaceview_drag_begin(GtkEventControllerMotion *self,
 			wview->obj_x = cview->x;
 			wview->obj_y = cview->y;
 		}
-		else if (cview) {
+		else if (cview &&
+			(modifiers & GDK_CONTROL_MASK)) {
 			Rowview *local = columnview_find_rowview(cview, start_x, start_y);
 
 			if (local) {

@@ -51,14 +51,16 @@ managedgobject_dispose(GObject *gobject)
 }
 
 static void
-managedgobject_info(iObject *iobject, VipsBuf *buf)
+managedgobject_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	Managedgobject *managedgobject = MANAGEDGOBJECT(iobject);
 
-	if (VIPS_IS_OBJECT(managedgobject->object))
+	if (VIPS_IS_OBJECT(managedgobject->object)) {
+		vips_buf_appendf(buf, "%*c", indent, ' ');
 		vips_object_summary(VIPS_OBJECT(managedgobject->object), buf);
+	}
 	else
-		IOBJECT_CLASS(managedgobject_parent_class)->info(iobject, buf);
+		IOBJECT_CLASS(managedgobject_parent_class)->info(iobject, buf, indent);
 }
 
 static void

@@ -27,10 +27,6 @@
 
  */
 
-/*
-#define DEBUG_RESOLVE
- */
-
 /* regular (and very slow) sanity checks on symbols ... needs DEBUG in
  * symbol.c as well
 #define DEBUG_SANITY
@@ -50,6 +46,14 @@
 
 /* trace pattern LHS generation
 #define DEBUG_PATTERN
+ */
+
+/* Show AST just before compilation.
+#define DEBUG_RESOLVE
+ */
+
+/* Trace objects as they are compiled
+#define DEBUG_COMPILE
  */
 
 /*
@@ -127,6 +131,36 @@ compile_map_all(Compile *compile, map_compile_fn fn, void *a)
 	 */
 	if ((res = (Compile *) icontainer_map(ICONTAINER(compile),
 			 (icontainer_map_fn) compile_map_all_sub, (void *) fn, a)))
+		return res;
+
+	return NULL;
+}
+
+static Compile *
+compile_map_all_inner_sub(Symbol *sym, map_compile_fn fn, void *a)
+{
+	return sym->expr && sym->expr->compile ?
+		compile_map_all_inner(sym->expr->compile, fn, a) : NULL;
+}
+
+/* Apply a function to a compile ... and any local compiles.
+ *
+ * Bottom-up (ie. innermost first) version.
+ */
+Compile *
+compile_map_all_inner(Compile *compile, map_compile_fn fn, void *a)
+{
+	Compile *res;
+
+	/* Any children.
+	 */
+	if ((res = (Compile *) icontainer_map(ICONTAINER(compile),
+			 (icontainer_map_fn) compile_map_all_inner_sub, (void *) fn, a)))
+		return res;
+
+	/* And us.
+	 */
+	if ((res = fn(compile, a)))
 		return res;
 
 	return NULL;
@@ -471,7 +505,7 @@ compile_dotsym(Compile *compile, Symbol *sym, PElement *rhs, PElement *out)
 	return TRUE;
 }
 
-/* Compile a reference to sym from expr.
+/* Compile a reference to sym from compile.
  */
 static gboolean
 compile_reference(Compile *compile, Symbol *sym, PElement *out)
@@ -480,10 +514,10 @@ compile_reference(Compile *compile, Symbol *sym, PElement *out)
 	Compile *parent = compile_get_parent(compile);
 
 #ifdef DEBUG
-	printf("generate_reference: ref to ");
-	symbol_name_print(sym);
-	printf("inside ");
+	printf("generate_reference: ");
 	compile_name_print(compile);
+	printf("refs sym ");
+	symbol_name_print(sym);
 	printf("\n");
 #endif /*DEBUG*/
 
@@ -519,7 +553,7 @@ compile_reference(Compile *compile, Symbol *sym, PElement *out)
 		Symbol *sths = symbol_get_parent(sym)->expr->compile->this;
 		PElement rhs;
 
-		/* Sym is a member of an enclosing class ...
+		/* sym is a member of an enclosing class ...
 		 * generate (.sym ref-to-this-for-that-class)
 		 */
 		if (!compile_dotsym(compile, sym, &rhs, out) ||
@@ -1566,13 +1600,10 @@ compile_defs_codegen_default(Compile *compile)
 
 	compile->has_default = TRUE;
 
-	/* We ref error, resolve outwards.
-	 */
-	compile_resolve_names(def->expr->compile, parent->expr->compile);
-
 #ifdef DEBUG
 	printf("compile_defs_codegen_default: generated ");
-	dump_compile(def->expr->compile);
+	int indent = 0;
+	dump_compile(def->expr->compile, &indent);
 #endif /*DEBUG*/
 
 	return TRUE;
@@ -1669,15 +1700,6 @@ compile_defs_codegen(Compile *compile)
 			this_compile->tree,		// the old RHS the user wrote
 			next_def);
 
-		/* We may have generated lots of new refs and zombies in this def,
-		 * resolve them outwards.
-		 */
-		compile_resolve_names(this_compile, compile_get_parent(this_compile));
-
-		/* Update recomp links in case this is a top-levelk sym
-		 */
-		symbol_made(sym);
-
 #ifdef DEBUG
 		printf("compile_defs_codegen: generated:\n");
 		if (this_compile->tree)
@@ -1711,12 +1733,10 @@ compile_heap(Compile *compile)
 		PEPUTP(&base, ELEMENT_NOVAL, (void *) 2);
 		if (!heap_gc(compile->heap))
 			return compile->sym;
-
-		return NULL;
 	}
 
 #ifdef DEBUG
-	printf("*** compile_heap: about to compile ");
+	printf("compile_heap: about to compile ");
 	symbol_name_print(compile->sym);
 	printf("\n");
 	if (compile->tree)
@@ -1816,6 +1836,17 @@ compile_object_sub(Compile *compile)
 void *
 compile_object(Compile *compile)
 {
+#ifdef DEBUG_COMPILE
+	printf("compile_object: ");
+	symbol_name_print(compile->sym);
+	printf("\n");
+#endif /*DEBUG_COMPILE*/
+
+	/* We can be called from inside the reduction engine.
+	 */
+	if (main_is_stack_full())
+		return compile;
+
 	/* Walk this tree of symbols computing the secret lists.
 	 */
 	secret_build(compile);
@@ -1828,71 +1859,40 @@ compile_object(Compile *compile)
 	return NULL;
 }
 
-static void *
-compile_codegen(Compile *compile)
-{
-	Symbol *sym = compile->sym;
-
-	if (sym->needs_codegen) {
-#ifdef DEBUG
-		printf("compile_codegen_sym: codegen for ");
-		symbol_name_print(sym);
-		printf("\n");
-		printf("\tbefore codegen, AST is:\n");
-		dump_compile(compile);
-#endif /*DEBUG*/
-
-		/* For now the only codegen is for multiple defs.
-		 */
-		if (sym->next_def ||
-			!compile->has_default) {
-			if (!compile_defs_check(compile) ||
-				!compile_defs_codegen(compile))
-				return sym;
-		}
-	}
-
-	sym->needs_codegen = FALSE;
-
-	return NULL;
-}
-
-/* This is a top-level def: search for any syms which need a codegen pass. For
- * example, a top-level def might have locals with multiple defs.
- */
-void *
-compile_codegen_toplevel(Symbol *sym)
-{
-	if (sym->expr &&
-		sym->expr->compile &&
-		compile_map_all(sym->expr->compile,
-			(map_compile_fn) compile_codegen, NULL))
-		return sym;
-
-	return NULL;
-}
-
-static void *
-compile_codegen_tool(Tool *tool)
-{
-	if (tool->sym &&
-		tool->sym->needs_codegen &&
-		compile_codegen_toplevel(tool->sym))
-		return tool;
-
-	return NULL;
-}
-
-/* Scan a toolkit and do any codegen.
- */
-void *
-compile_codegen_toolkit(Toolkit *kit)
-{
-	return toolkit_map(kit, (tool_map_fn) compile_codegen_tool, NULL, NULL);
-}
-
 /* Parse support.
  */
+
+/* End of parse of a top-0level definition.
+ */
+void *
+compile_codegen(Compile *compile)
+{
+    Symbol *sym = compile->sym;
+
+    if (sym->needs_codegen) {
+#ifdef DEBUG
+        printf("compile_codegen_end: codegen for ");
+        symbol_name_print(sym);
+        printf("\n");
+        printf("\tbefore codegen, AST is:\n");
+		int indent = 0;
+        dump_compile(compile, &indent);
+#endif /*DEBUG*/
+
+        /* For now the only codegen is for multiple defs.
+         */
+        if (sym->next_def ||
+            !compile->has_default) {
+            if (!compile_defs_check(compile) ||
+                !compile_defs_codegen(compile))
+                return sym;
+        }
+    }
+
+    sym->needs_codegen = FALSE;
+
+    return NULL;
+}
 
 static ParseNode *
 compile_check_i18n(Compile *compile, ParseNode *pn)
@@ -1939,34 +1939,6 @@ compile_check_i18n(Compile *compile, ParseNode *pn)
 	return NULL;
 }
 
-static ParseNode *
-compile_check_more(Compile *compile, ParseNode *pn)
-{
-	switch (pn->type) {
-	case NODE_BINOP:
-		switch (pn->biop) {
-		case BI_MORE:
-			pn->biop = BI_LESS;
-			SWAPP(pn->arg1, pn->arg2);
-			break;
-
-		case BI_MOREEQ:
-			pn->biop = BI_LESSEQ;
-			SWAPP(pn->arg1, pn->arg2);
-			break;
-
-		default:
-			break;
-		}
-		break;
-
-	default:
-		break;
-	}
-
-	return NULL;
-}
-
 /* Do end-of-parse checks. Called after every 'A = ...' style definition (not
  * just top-level syms). Used to do lots of checks, not much left now.
  */
@@ -2000,12 +1972,6 @@ compile_check(Compile *compile)
 #endif /*DEBUG*/
 	(void) tree_map(compile,
 		(tree_map_fn) compile_check_i18n, compile->tree, NULL, NULL);
-
-	/* Swap MORE and MOREEQ for LESS and LESSEQ. Reduces the number of
-	 * cases for the compiler.
-	 */
-	(void) tree_map(compile,
-		(tree_map_fn) compile_check_more, compile->tree, NULL, NULL);
 
 	return TRUE;
 }
@@ -2129,10 +2095,15 @@ compile_resolve_names_sub(Symbol *sym, Compile *outer)
 		/* Nothing on the outer table of that name. Can just move the
 		 * symbol across.
 		 */
+#ifdef DEBUG_RESOLVE
+		printf("compile_resolve: moving zombie ");
+		symbol_name_print(sym);
+		printf("out one scope\n");
+#endif /*DEBUG_RESOLVE*/
+
 		g_object_ref(G_OBJECT(sym));
 		icontainer_child_remove(ICONTAINER(sym));
-		icontainer_child_add(ICONTAINER(outer),
-			ICONTAINER(sym), -1);
+		icontainer_child_add(ICONTAINER(outer), ICONTAINER(sym), -1);
 		g_object_unref(G_OBJECT(sym));
 	}
 
@@ -2151,6 +2122,47 @@ compile_resolve_names(Compile *inner, Compile *outer)
 {
 	(void) icontainer_map(ICONTAINER(inner),
 		(icontainer_map_fn) compile_resolve_names_sub, outer, NULL);
+}
+
+static void *
+compile_resolve_static_sub(Compile *compile, void *user_data)
+{
+	/* Resolve any zombies we have outwards again.
+	 */
+	Compile *outer = compile_get_parent(compile);
+	if (outer)
+		compile_resolve_names(compile, outer);
+
+	return NULL;
+}
+
+/* Resolve names in a top-level symbol.
+ *
+ * Starting at the innermost compile, we recursively resolve outwards, linking
+ * all symbols.
+ */
+void
+compile_resolve_static(Symbol *sym)
+{
+#ifdef DEBUG
+	printf("compile_resolve_static: ");
+	symbol_name_print(sym);
+	printf("\n");
+#endif /*DEBUG*/
+
+	if (sym->expr &&
+		sym->expr->compile) {
+		compile_map_all_inner(sym->expr->compile,
+			compile_resolve_static_sub, NULL);
+
+#ifdef DEBUG_RESOLVE
+		printf("compile_resolve_static: after resolve ");
+		symbol_name_print(sym);
+		printf("\n");
+		int indent = 0;
+		dump_compile(sym->expr->compile, &indent);
+#endif /*DEBUG_RESOLVE*/
+	}
 }
 
 /* Hit a top-level zombie during reduction. Search outwards to root looking on
@@ -2246,13 +2258,12 @@ static void *
 compile_find_generated_node(Compile *compile, ParseNode *node,
 	GSList **list)
 {
-	Symbol *sym = node->leaf;
+	if (node->type == NODE_LEAF) {
+		Symbol *sym = node->leaf;
 
-	if (node->type == NODE_LEAF &&
-		sym->generated &&
-		symbol_get_parent(sym) &&
-		symbol_get_parent(sym)->expr->compile == compile)
-		*list = g_slist_prepend(*list, sym);
+		if (sym->generated)
+			*list = g_slist_prepend(*list, sym);
+	}
 
 	return NULL;
 }
@@ -2307,8 +2318,7 @@ compile_copy_sym(Symbol *sym, Compile *dest)
 		(void) symbol_user_init(copy_sym);
 		(void) compile_new_local(copy_sym->expr);
 
-		/* Copy any locals over. We have to do this before we copy the
-		 * tree so that the new tree links to the new syms.
+		/* Copy any locals over.
 		 */
 		icontainer_map(ICONTAINER(sym->expr->compile),
 			(icontainer_map_fn) compile_copy_sym,
@@ -2316,11 +2326,6 @@ compile_copy_sym(Symbol *sym, Compile *dest)
 
 		copy_sym->expr->compile->tree = tree_copy(
 			copy_sym->expr->compile, sym->expr->compile->tree);
-
-		/* Copying the tree may have made some zombies. Resolve
-		 * outwards.
-		 */
-		compile_resolve_names(copy_sym->expr->compile, dest);
 
 		break;
 
@@ -2349,13 +2354,13 @@ compile_copy_sym(Symbol *sym, Compile *dest)
  * of the tree in toscope and copy over any generated syms too. fromscope and
  * toscope can be the same, in which case we can just copy the tree.
  */
-ParseNode *
-compile_copy_tree(Compile *fromscope, ParseNode *tree, Compile *toscope)
+static ParseNode *
+compile_move_tree(Compile *fromscope, ParseNode *tree, Compile *toscope)
 {
-	ParseNode *copy_tree;
+	ParseNode *new_tree;
 
 #ifdef DEBUG
-	printf("compile_copy_tree: copying tree from ");
+	printf("compile_move_tree: moving tree from ");
 	compile_name_print(fromscope);
 	printf(" to ");
 	compile_name_print(toscope);
@@ -2364,31 +2369,40 @@ compile_copy_tree(Compile *fromscope, ParseNode *tree, Compile *toscope)
 
 	/* A new context? Copy generated syms over.
 	 */
+	g_autoptr(GSList) copy = NULL;
 	if (fromscope != toscope) {
-		GSList *generated;
-
-		generated = compile_find_generated(fromscope, tree);
+		copy = compile_find_generated(fromscope, tree);
 
 #ifdef DEBUG
 		printf("with generated children: ");
-		(void) slist_map(generated, (SListMapFn) dump_tiny, NULL);
+		(void) slist_map(copy, (SListMapFn) dump_tiny, NULL);
 		printf("\n");
 #endif /*DEBUG*/
 
-		slist_map(generated,
+		slist_map(copy,
 			(SListMapFn) compile_copy_sym, toscope);
-
-		g_slist_free(generated);
 	}
 
-	copy_tree = tree_copy(toscope, tree);
+	new_tree = tree_copy(toscope, tree);
 
-	/* Copying the tree may have made some zombies. Resolve
-	 * outwards.
+	/* Remove the generated syms: these may contain zombies which won't
+	 * resolve in the old context.
 	 */
-	compile_resolve_names(toscope, compile_get_parent(toscope));
+	for (GSList *p = copy; p; p = p->next) {
+		Symbol *child = SYMBOL(p->data);
 
-	return copy_tree;
+		// set placeholder so that removing this child won't set an undefined
+		// error
+		child->placeholder = TRUE;
+
+		IDESTROY(child);
+	}
+
+#ifdef DEBUG
+	printf("compile_move_tree: done\n");
+#endif /*DEBUG*/
+
+	return new_tree;
 }
 
 /* Generate the parse tree for this list comprehension.
@@ -2397,9 +2411,9 @@ compile_copy_tree(Compile *fromscope, ParseNode *tree, Compile *toscope)
 
 	[(x, y) :: x <- [1..3]; y <- [x..3]; x + y > 3];
 
-	... $$lcomp1 ...
+	... $$list1 ...
 	{
-		$$lcomp1 = NULL
+		$$list1 = NULL
 		{
 			$$result = (x, y);
 			// elements in left-to-right order
@@ -2410,11 +2424,11 @@ compile_copy_tree(Compile *fromscope, ParseNode *tree, Compile *toscope)
 		}
 	}
 
-  and we generate this code:
+  we generate this code:
 
-	z = $$lcomp1
+	z = $$list1
 	{
-		$$lcomp1 = foldr $f1 [] [1..3]
+		$$list1 = foldr $f1 [] [1..3]
 		{
 			$f1 x $sofar = foldr $f2 $sofar [x..3]
 			{
@@ -2425,6 +2439,10 @@ compile_copy_tree(Compile *fromscope, ParseNode *tree, Compile *toscope)
 			}
 		}
 	}
+
+  and compute this result:
+
+	[1 + 3j, 2 + 2j, 2 + 3j, 3 + 3j]
 
  */
 
@@ -2461,6 +2479,46 @@ compile_lcomp_find_pattern(GSList *children, const char *generator)
 	return NULL;
 }
 
+/* Recurse over the pattern removing references.
+ */
+static void *
+compile_lcomp_pattern_zombies(ParseNode *node)
+{
+	switch (node->type) {
+	case NODE_LEAF:
+#ifdef DEBUG_LCOMP
+		printf("compile_lcomp_pattern_zombies: removing ");
+		dump_tiny(node->leaf);
+		printf("\n");
+#endif /*DEBUG_LCOMP*/
+
+		IDESTROY(node->leaf);
+		break;
+
+	case NODE_PATTERN_CLASS:
+		compile_lcomp_pattern_zombies(node->arg1);
+		break;
+
+	case NODE_BINOP:
+		compile_lcomp_pattern_zombies(node->arg1);
+		compile_lcomp_pattern_zombies(node->arg2);
+		break;
+
+	case NODE_LISTCONST:
+		slist_map(node->elist,
+			(SListMapFn) compile_lcomp_pattern_zombies, NULL);
+		break;
+
+	case NODE_CONST:
+		break;
+
+	default:
+		g_assert(0);
+	}
+
+	return NULL;
+}
+
 void
 compile_lcomp(Compile *compile)
 {
@@ -2469,24 +2527,19 @@ compile_lcomp(Compile *compile)
 	 */
 	static int count = 1;
 
-	GSList *children;
-	gboolean sofar;
-	Compile *scope;
-	Symbol *result;
-	GSList *p;
-	Symbol *child;
 	char name[256];
 	ParseNode *n1, *n2, *n3;
 
 #ifdef DEBUG_LCOMP
 	printf("before compile_lcomp: ");
-	dump_compile(compile);
+	int indent = 0;
+	dump_compile(compile, &indent);
 #endif /*DEBUG_LCOMP*/
 
 	/* Find all the elements of the lcomp: generators, filters, patterns
-	 * and $$result.
+	 * and result.
 	 */
-	children = NULL;
+	g_autoptr(GSList) children = NULL;
 	(void) icontainer_map(ICONTAINER(compile),
 		(icontainer_map_fn) compile_lcomp_find, &children, NULL);
 
@@ -2500,21 +2553,21 @@ compile_lcomp(Compile *compile)
 
 	/* As yet no list to build on.
 	 */
-	sofar = FALSE;
+	gboolean sofar = FALSE;
 
 	/* Start by building a tree in this scope.
 	 */
-	scope = compile;
+	Compile *scope = compile;
 
 	/* Not seen the result element yet, but we should.
 	 */
-	result = NULL;
+	Symbol *result = NULL;
 
 	/* Now generate code for each element, either a filter or a generator.
 	 * If we do a generator, we need to search for the associated pattern
 	 * and expand it.
 	 */
-	for (p = children; p; p = p->next) {
+	for (GSList *p = children; p; p = p->next) {
 		Symbol *element = (Symbol *) p->data;
 
 		/* Just note the result element ... we use it right at the end.
@@ -2534,7 +2587,7 @@ compile_lcomp(Compile *compile)
 		 * this scope.
 		 */
 		g_snprintf(name, 256, "$$fn%d", count++);
-		child = symbol_new_defining(scope, name);
+		Symbol *child = symbol_new_defining(scope, name);
 		child->generated = TRUE;
 		(void) symbol_user_init(child);
 		(void) compile_new_local(child->expr);
@@ -2542,7 +2595,7 @@ compile_lcomp(Compile *compile)
 		if (is_prefix("$$filter", IOBJECT(element)->name)) {
 			/* A filter.
 			 */
-			n1 = compile_copy_tree(compile,
+			n1 = compile_move_tree(compile,
 				element->expr->compile->tree, scope);
 			n2 = tree_leafsym_new(scope, child);
 			n3 = tree_leaf_new(scope, "$$sofar");
@@ -2589,7 +2642,7 @@ compile_lcomp(Compile *compile)
 				n2 = tree_const_new(scope, con);
 			}
 			n3 = tree_appl_new(scope, n3, n2);
-			n2 = compile_copy_tree(compile,
+			n2 = compile_move_tree(compile,
 				element->expr->compile->tree, scope);
 			n3 = tree_appl_new(scope, n3, n2);
 			scope->tree = n3;
@@ -2608,33 +2661,45 @@ compile_lcomp(Compile *compile)
 	 */
 	g_assert(result);
 
-	n1 = compile_copy_tree(result->expr->compile,
+#ifdef DEBUG_LCOMP
+	printf("copying expr ");
+	dump_tiny(result);
+	printf("to inner lcomp\n");
+#endif /*DEBUG_LCOMP*/
+
+	n1 = compile_move_tree(result->expr->compile,
 		result->expr->compile->tree, scope);
 	n2 = tree_leaf_new(scope, "$$sofar");
 	n3 = tree_binop_new(compile, BI_CONS, n1, n2);
 	scope->tree = n3;
 
-	/* Loop outwards again, closing the scopes we made.
+	/* Remove all variables made by patterns. We don't want them to be
+	 * resolved outwards into the enclosing scope.
+	 *
+	 * Also, the pattern placeholders refer to them, so unless we remove them,
+	 * we can't remove the placeholders without leaving dangling patch
+	 * pointers.
 	 */
-	while (scope != compile) {
-		/* We know check can't fail on generated code.
+	for (GSList *p = children; p; p = p->next) {
+		Symbol *child = SYMBOL(p->data);
 
-			FIXME ... yuk, maybe compile_lcomp should be
-			failable too
+		if (is_prefix("$$patt", IOBJECT(child)->name))
+			compile_lcomp_pattern_zombies(child->expr->compile->tree);
+	}
 
-		 */
-		(void) compile_check(scope);
-		compile_resolve_names(scope, compile_get_parent(scope));
+	/* Remove all placeholders, they may contain refs to symbols which will
+	 * not resolve and will block computation.
+	 */
+	for (GSList *p = children; p; p = p->next) {
+		Symbol *child = SYMBOL(p->data);
 
-		scope = compile_get_parent(scope);
+		IDESTROY(child);
 	}
 
 #ifdef DEBUG_LCOMP
 	printf("after compile_lcomp: ");
-	dump_compile(compile);
+	dump_compile(compile, &indent);
 #endif /*DEBUG_LCOMP*/
-
-	g_slist_free(children);
 }
 
 /* Compile a pattern LHS. Generate a sym for each pattern variable, each of
@@ -2895,7 +2960,6 @@ static void
 compile_pattern_leaf(PatternInfo *info, Symbol *leaf)
 {
 	Symbol *sym = symbol_new_defining(info->compile, IOBJECT(leaf)->name);
-	sym->generated = TRUE;
 	(void) symbol_user_init(sym);
 	(void) compile_new_local(sym->expr);
 	symbol_made(sym);
@@ -2907,16 +2971,12 @@ compile_pattern_leaf(PatternInfo *info, Symbol *leaf)
 			info->value, info->trail, info->depth - 1),
 		compile_pattern_error(compile));
 
-	/* The access sym will contain refs to $$value, $$match etc. which must be
-	 * resolved out one.
-	 */
-	compile_resolve_names(compile, info->compile);
-
 	info->built_syms = g_slist_append(info->built_syms, sym);
 
 #ifdef DEBUG_PATTERN
 	printf("compile_pattern_leaf: generated ");
-	dump_compile(compile);
+	int indent = 0;
+	dump_compile(compile, &indent);
 #endif /*DEBUG_PATTERN*/
 }
 
@@ -2984,14 +3044,10 @@ compile_pattern_match(Compile *compile, Symbol *value, ParseNode *pattern)
 		match->expr->compile->tree = tree_const_new(match->expr->compile, c);
 	}
 
-	/* The $$match can call eg. is_list_len, we need to resolve these
-	 * references.
-	 */
-	compile_resolve_names(match->expr->compile, compile);
-
 #ifdef DEBUG
 	printf("compile_pattern_match: generated ");
-	dump_compile(match->expr->compile);
+	int indent = 0;
+	dump_compile(match->expr->compile, &indent);
 #endif /*DEBUG*/
 
 	return match;
@@ -3005,7 +3061,7 @@ compile_pattern_match(Compile *compile, Symbol *value, ParseNode *pattern)
  *		a = if $$match0 then $$value0?0 else error "pattern match failed"
  *		b = ...
  *
- * Return a list of the new symbols we built, they will need finishing up.
+ * Return a list of the new symbols we built.
  *
  * The first returned sym is the $$match test.
  */

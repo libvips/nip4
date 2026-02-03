@@ -40,3 +40,4 @@ gboolean is_memberfunc(Compile *compile);
 gboolean is_value(Symbol *sym);
 gboolean is_ancestor(Symbol *context, Symbol *sym);
 gboolean is_menuable(Symbol *sym);
+gboolean is_visible(Symbol *sym);

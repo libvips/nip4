@@ -15,16 +15,16 @@ https://www.libvips.org/2025/03/12/nip4-for-nip2-users.html
 # Introduction
 
 nip4 is a spreadsheet-like interface to the [libvips image processing
-library](https://libvips.github.io/libvips). 
-You create a set of formula connecting your objects together, and on a change 
-nip4 will recalculate. Because nip4 uses libvips as the image processing engine 
+library](https://libvips.github.io/libvips).
+You create a set of formula connecting your objects together, and on a change
+nip4 will recalculate. Because nip4 uses libvips as the image processing engine
 it can handle  very large images, recalculates quickly, and only needs a little memory.
 It scales to fairly complex workflows: I've used it to develop systems with
 more than 10,000 cells, analyzing images of many tens of gigabytes.
 
 nip4 can load all workspaces from nip2, the previous version of this program.
 It has a batch mode, so you can run any image processing system you develop
-from the command-line and without a GUI. It is purely functional, meaning 
+from the command-line and without a GUI. It is purely functional, meaning
 there is no assignment and there are no side effects, and it is fully lazy, meaning
 all computation is driven by the user interface, down to the pixel level.
 
@@ -44,6 +44,20 @@ There's a zip for each version on the [releases
 page](https://github.com/jcupitt/nip4/releases). Download
 `nip4-x86_64-9.0.11.zip`, unzip somewhere, and run `bin/nip4.exe`.
 
+If you see rendering problems, it's worth trying another backend.
+By default, vipsdisp uses Vulkan to draw the UI, and this can be a bit wonky
+on some older versions of Windows.
+
+If you see something like a blank window on startup, try:
+
+```console
+> set GSK_RENDERER=cairo
+> vipsdisp
+```
+
+That will use a software only fallback to draw the UI and should work on any
+version of Windows, though it will be a bit slower
+
 ## macOS
 
 nip4 is in [homebrew](https://brew.sh/), so just:
@@ -51,10 +65,6 @@ nip4 is in [homebrew](https://brew.sh/), so just:
 ```
 brew install nip4
 ```
-
-The not-yet-released libvips 8.18 has some performance improvements
-that help nip4 image rendering a lot. Until 8.18 is released, experts can
-patch their homebrew install for a good speedup.
 
 ## Linux-like systems with flatpak
 
@@ -157,8 +167,6 @@ flatpak uninstall nip4
 ## Notes on flatpak build process
 
 - niftiio is annoying to build, skip it.
-
-- we skip imagemagick as well, too huge
 
 ## Packaging for flathub
 

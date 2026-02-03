@@ -286,9 +286,9 @@ secret_all(Compile *compile)
 {
 	if (slist_map(compile->param, (SListMapFn) secret_all_sym, compile) ||
 		slist_map(compile->secret, (SListMapFn) secret_all_sym, compile))
-		return compile
+		return compile;
 
-			return NULL;
+	return NULL;
 }
 #endif /*DEBUG*/
 

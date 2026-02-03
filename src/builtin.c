@@ -1018,10 +1018,14 @@ dir_scope(Symbol *sym, Reduce *rc, PElement *list)
 {
 	PElement t;
 
-	if (!heap_list_add(rc->heap, list, &t) ||
-		!heap_managedstring_new(rc->heap, IOBJECT(sym)->name, &t))
-		reduce_throw(rc);
-	(void) heap_list_next(list);
+	// hide zombies, hide generated symbols (like $$matchN)
+	if (is_visible(sym)) {
+		if (!heap_list_add(rc->heap, list, &t) ||
+			!heap_managedstring_new(rc->heap, IOBJECT(sym)->name, &t))
+			reduce_throw(rc);
+
+		(void) heap_list_next(list);
+	}
 
 	return NULL;
 }
@@ -1489,7 +1493,7 @@ builtin_gsl_error(const char *reason, const char *file,
 	int line, int gsl_errno)
 {
 	error_top(_("GSL library error"));
-	error_sub("%s - (%s:%d) - %s",
+	error_sub("%s — (%s:%d) — %s",
 		reason, file, line, gsl_strerror(gsl_errno));
 
 	reduce_throw(reduce_context);
@@ -1679,7 +1683,7 @@ builtin_usage(VipsBuf *buf, BuiltinInfo *builtin)
 	vips_buf_appends(buf, "\n");
 
 	for (i = 0; i < builtin->nargs; i++)
-		vips_buf_appendf(buf, "    %d - %s\n", i + 1, builtin->args[i]->name);
+		vips_buf_appendf(buf, "    %d — %s\n", i + 1, builtin->args[i]->name);
 }
 
 #ifdef DEBUG

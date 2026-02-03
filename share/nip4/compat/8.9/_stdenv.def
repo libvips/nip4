@@ -2557,17 +2557,6 @@ unpremultiply x
 	unprem x = vips_call9 "unpremultiply" [x] [];
 }
 
-hist_entropy x
-	= oo_unary_function hist_entropy_op x, is_class x
-	= entropy x, is_image x
-	= error (_ "bad arguments to " ++ "hist_entropy")
-{
-	hist_entropy_op = Operator "hist_entropy"
-		hist_entropy Operator_type.COMPOUND_REWRAP false;
-
-	entropy x = vips_call9 "hist_entropy" [x] [];
-}
-
 canny sigma precision x
 	= oo_unary_function canny_op x, is_class x
 	= canny_im (to_real sigma) (to_int precision) x, is_image x
@@ -2593,3 +2582,5 @@ sobel x
 
 	sobel_im x = vips_call9 "sobel" [x] [];
 }
+
+vips_call9 = vips_call;

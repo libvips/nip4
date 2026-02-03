@@ -76,14 +76,15 @@ managedstring_finalize(GObject *gobject)
 }
 
 static void
-managedstring_info(iObject *iobject, VipsBuf *buf)
+managedstring_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	Managedstring *managedstring = MANAGEDSTRING(iobject);
 
-	vips_buf_appendf(buf, "managedstring->string = \"%s\"\n",
+	vips_buf_appendf(buf, "%*cmanagedstring->string = \"%s\"\n",
+		indent, ' ',
 		managedstring->string);
 
-	IOBJECT_CLASS(managedstring_parent_class)->info(iobject, buf);
+	IOBJECT_CLASS(managedstring_parent_class)->info(iobject, buf, indent);
 }
 
 /* Hash and equality for a managed string: we need the string and the heap to

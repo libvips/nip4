@@ -220,20 +220,21 @@ tool_type_to_char(Tooltype type)
 }
 
 static void
-tool_info(iObject *iobject, VipsBuf *buf)
+tool_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	Tool *tool = TOOL(iobject);
 
-	IOBJECT_CLASS(tool_parent_class)->info(iobject, buf);
+	IOBJECT_CLASS(tool_parent_class)->info(iobject, buf, indent);
 
-	vips_buf_appendf(buf, "type = \"%s\"\n", tool_type_to_char(tool->type));
+	vips_buf_appendf(buf, "%*ctype = \"%s\"\n", indent, ' ',
+		tool_type_to_char(tool->type));
 	if (tool->type == TOOL_SYM)
-		vips_buf_appendf(buf, "symbol = \"%s\"\n",
+		vips_buf_appendf(buf, "%*csymbol = \"%s\"\n",indent, ' ',
 			IOBJECT(tool->sym)->name);
 	if (tool->lineno != -1)
-		vips_buf_appendf(buf, "lineno = %d\n", tool->lineno);
+		vips_buf_appendf(buf, "%*clineno = %d\n", indent, ' ', tool->lineno);
 	if (tool->kit)
-		vips_buf_appendf(buf, "toolkit = \"%s\"\n",
+		vips_buf_appendf(buf, "%*ctoolkit = \"%s\"\n",indent, ' ',
 			IOBJECT(tool->kit)->name);
 }
 
@@ -688,6 +689,52 @@ toolitem_print_all(Toolitem *toolitem)
 }
 #endif /*DEBUG_MENUS*/
 
+static void
+tool_set_help(Tool *tool)
+{
+	char *p;
+	char value[MAX_NAME];
+
+	if (tool->sym &&
+		tool->sym->expr &&
+		tool->sym->expr->compile &&
+		(p = tool->sym->expr->compile->text)) {
+		/* Skip leading whitespace.
+		 */
+		while (isspace((int) (*p)))
+			p++;
+
+		/* Skip leading comment, if any.
+		 */
+		if (p[0] == '/' && p[1] == '*')
+			p += 2;
+		else if (p[0] == '/' && p[1] == '/')
+			p += 2;
+
+		/* Skip more whitespace.
+		 */
+		while (isspace((int) (*p)))
+			p++;
+
+		/* Limit to MAX_NAME chars or 1st line. Strip trailing
+		 * whitespace.
+		 */
+		g_strlcpy(value, p, MAX_NAME);
+		if ((p = strchr(value, '\n')))
+			*p = '\0';
+		*((char *) my_strrspn(value, WHITESPACE)) = '\0';
+
+		VIPS_SETSTR(tool->help, value);
+	}
+	else if (tool->sym &&
+		tool->sym->type == SYM_BUILTIN)
+		VIPS_SETSTR(tool->help, g_strdup_printf("%s: %s",
+				IOBJECT(tool->sym)->name,
+				tool->sym->builtin->desc));
+	else
+		VIPS_SETSTR(tool->help, NULL);
+}
+
 /* Rebuild the toolitem tree.
  */
 static void
@@ -733,52 +780,6 @@ tool_new_value_cb(Symbol *sym, Tool *tool)
 #endif /*DEBUG*/
 
 	tool_toolitem_rebuild(tool);
-}
-
-static void
-tool_set_help(Tool *tool)
-{
-	char *p;
-	char value[MAX_NAME];
-
-	if (tool->sym &&
-		tool->sym->expr &&
-		tool->sym->expr->compile &&
-		(p = tool->sym->expr->compile->text)) {
-		/* Skip leading whitespace.
-		 */
-		while (isspace((int) (*p)))
-			p++;
-
-		/* Skip leading comment, if any.
-		 */
-		if (p[0] == '/' && p[1] == '*')
-			p += 2;
-		else if (p[0] == '/' && p[1] == '/')
-			p += 2;
-
-		/* Skip more whitespace.
-		 */
-		while (isspace((int) (*p)))
-			p++;
-
-		/* Limit to MAX_NAME chars or 1st line. Strip trailing
-		 * whitespace.
-		 */
-		g_strlcpy(value, p, MAX_NAME);
-		if ((p = strchr(value, '\n')))
-			*p = '\0';
-		*((char *) my_strrspn(value, WHITESPACE)) = '\0';
-
-		VIPS_SETSTR(tool->help, value);
-	}
-	else if (tool->sym &&
-		tool->sym->type == SYM_BUILTIN)
-		VIPS_SETSTR(tool->help, g_strdup_printf("%s: %s",
-				IOBJECT(tool->sym)->name,
-				tool->sym->builtin->desc));
-	else
-		VIPS_SETSTR(tool->help, NULL);
 }
 
 /* Add a symbol to a toolkit.

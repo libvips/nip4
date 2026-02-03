@@ -26,7 +26,6 @@ extern Symbol *main_symbol_root;
 extern Watchgroup *main_watchgroup;
 extern Imageinfogroup *main_imageinfogroup;
 
-extern void *main_c_stack_base;
 extern const char *main_argv0;
 
 extern gboolean main_option_i18n;
@@ -35,6 +34,8 @@ extern gboolean main_option_batch;
 
 void set_prefix(const char *prefix);
 const char *get_prefix(void);
+
+gboolean main_is_stack_full(void);
 
 void main_startup(int argc, char **argv);
 void main_shutdown(void);

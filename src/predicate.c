@@ -204,3 +204,13 @@ is_menuable(Symbol *sym)
 
 	return TRUE;
 }
+
+/* A thing that's not hidden, so eg. not "$$match84". Allow scopes (non-value
+ * types).
+ */
+gboolean
+is_visible(Symbol *sym)
+{
+	return sym->type != SYM_ZOMBIE &&
+		!sym->generated;
+}

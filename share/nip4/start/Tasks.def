@@ -861,61 +861,74 @@ Manual_balance_item = class
 
 	sep3 = Menuseparator;
 
-Clone_area_item = class
-   Menuaction "_Clone Area"
-       "replace dark or light section of im1 with pixels from im2"
-   {
-   action im1 im2 = class
-       _result {
-       _check_args = [
-           [im1, "im1", check_Image],
-           [im2, "im2", check_Image]
-       ];
-                 _vislevel = 3;                            /* Region on first
-image placed in the top left hand corner,
-        * positioned and size relative to the height and width of im1.
-        */
-       r1 = Region_relative im1 0.05 0.05 0.05 0.05;
-             /* Mark on second image placed in the top left hand corner,
-        * positioned relative to the height and width of im2. Used to
-        * define _r2, the region from which the section of image is cloned
-        * from.
-        */
-       p2 = Mark_relative im2 0.05 0.05;              _r2 = Region im2 p2.left
-p2.top r1.width r1.height;
-             mask = [r1 <= Options.sc, r1 >=
-Options.sc]?(Options.replace);
-                 Options = class
-           {
-           _vislevel = 3;
-                     pause = Toggle "Pause process" true;
-                         /* Option toggle used to define whether the user is
-            * replacing a dark or a light area.
-            */
-           replace = Option "Replace" [ "A Dark Area", "A Light Area" ] 1;
+    Clone_area_item = class
+        Menuaction "_Clone Area"
+            "replace dark or light section of im1 with pixels from im2" {
+        action im1 im2 = class
+            _result {
+            _check_args = [
+                [im1, "im1", check_Image],
+                [im2, "im2", check_Image]
+            ];
+            _vislevel = 3;
 
-           // Used to select the area to be replaced.
-            sc = Scale "Scale cutoff" 0.01 mx (mx / 2)
-               {mx = Image_format.maxval im1.format;}
-             //Allows replacement with scale&offset balanced gaussian noise.
-           balance = Toggle "Balance cloned data to match surroundings." true;
-                             //Allows replacement with scale&offset balanced
-                             //gaussian noise.
-           process = Toggle "Replace area with Gaussian noise." false;
-           }
-                     _result    = im1, Options.pause
-               = Image (im_insert im1.value patch r1.left r1.top)
-           {              r2 = Region im2 p2.left p2.top r1.width r1.height;
-           ref_meanmax = so_meanmax (if mask then 0 else r1);
-                     mask8 = Matrix_mor [[255, 255, 255], [255, 255, 255],
-[255, 255, 255]];
-           mask_a = map_unary (dilate mask8) mask;
-           mask_b = convsep (matrix_blur 2) mask_a;
-                     patch = so_balance ref_meanmax r1 r2 mask_b
-Options.process, Options.balance
-                 = so_balance ref_meanmax r1 r2 mask_b Options.process,
-Options.process
-                 = im_blend (get_image mask_b) (get_image r2) (get_image r1);
+            /* Region on first image placed in the top left hand corner,
+             * positioned and size relative to the height and width of im1.
+             */
+            r1 = Region_relative im1 0.05 0.05 0.05 0.05;
+
+            /* Mark on second image placed in the top left hand corner,
+             * positioned relative to the height and width of im2. Used to
+             * define _r2, the region from which the section of image is cloned
+             * from.
+             */
+            p2 = Mark_relative im2 0.05 0.05;
+            _r2 = Region im2 p2.left p2.top r1.width r1.height;
+            mask = [r1 <= Options.sc, r1 >= Options.sc]?(Options.replace);
+
+            Options = class {
+                _vislevel = 3;
+
+                pause = Toggle "Pause process" true;
+
+                /* Option toggle used to define whether the user is
+                 * replacing a dark or a light area.
+                 */
+                replace = Option "Replace" [ "A Dark Area", "A Light Area" ] 1;
+
+                // Used to select the area to be replaced.
+                sc = Scale "Scale cutoff" 0.01 mx (mx / 2)
+                {
+                    mx = Image_format.maxval im1.format;
+                }
+
+                // Allows replacement with scale&offset balanced gaussian noise.
+                balance =
+                    Toggle "Balance cloned data to match surroundings." true;
+
+                // Allows replacement with scale&offset balanced gaussian noise.
+                process = Toggle "Replace area with Gaussian noise." false;
+            }
+
+            _result
+                = im1, Options.pause
+                = Image (im_insert im1.value patch r1.left r1.top)
+            {
+                r2 = Region im2 p2.left p2.top r1.width r1.height;
+                ref_meanmax = so_meanmax (if mask then 0 else r1);
+                mask8 = Matrix_mor [
+                    [255, 255, 255],
+                    [255, 255, 255],
+                    [255, 255, 255]
+                ];
+                mask_a = map_unary (dilate mask8) mask;
+                mask_b = convsep (matrix_blur 2) mask_a;
+                patch
+                    = so_balance ref_meanmax r1 r2 mask_b Options.process,
+                        Options.balance
+                    = so_balance ref_meanmax r1 r2 mask_b Options.process,
+                        Options.process
+                    = im_blend (get_image mask_b) (get_image r2) (get_image r1);
            }
        }
    }

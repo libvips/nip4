@@ -23,6 +23,7 @@
 
 /*
 #define DEBUG
+#define DEBUG_LEAK
  */
 
 #include "nip4.h"
@@ -38,6 +39,10 @@ enum {
 G_DEFINE_TYPE(iObject, iobject, G_TYPE_OBJECT)
 
 static guint iobject_signals[SIG_LAST] = { 0 };
+
+#ifdef DEBUG_LEAK
+GSList *iobject_all = NULL;
+#endif /*DEBUG_LEAK*/
 
 /* Don't emit "destroy" immediately, do it from the _dispose handler, see
  * below.
@@ -73,7 +78,7 @@ iobject_changed(iObject *iobject)
 }
 
 void *
-iobject_info(iObject *iobject, VipsBuf *buf)
+iobject_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	iObjectClass *iobject_class = IOBJECT_GET_CLASS(iobject);
 
@@ -81,7 +86,7 @@ iobject_info(iObject *iobject, VipsBuf *buf)
 	g_return_val_if_fail(IS_IOBJECT(iobject), NULL);
 
 	if (iobject_class->info)
-		iobject_class->info(iobject, buf);
+		iobject_class->info(iobject, buf, indent);
 
 	return NULL;
 }
@@ -122,6 +127,10 @@ iobject_finalize(GObject *gobject)
 	VIPS_FREE(iobject->name);
 	VIPS_FREE(iobject->caption);
 
+#ifdef DEBUG_LEAK
+	iobject_all = g_slist_remove(iobject_all, iobject);
+#endif /*DEBUG_LEAK*/
+
 	G_OBJECT_CLASS(iobject_parent_class)->finalize(gobject);
 }
 
@@ -136,13 +145,17 @@ iobject_real_changed(iObject *iobject)
 }
 
 static void
-iobject_real_info(iObject *iobject, VipsBuf *buf)
+iobject_real_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	if (iobject->name)
-		vips_buf_appendf(buf, "name = \"%s\"\n", iobject->name);
+		vips_buf_appendf(buf, "%*cname = \"%s\"\n",  indent, ' ',
+			iobject->name);
 	if (iobject->caption)
-		vips_buf_appendf(buf, "caption = \"%s\"\n", iobject->caption);
-	vips_buf_appendf(buf, "iObject :: \"%s\"\n", G_OBJECT_TYPE_NAME(iobject));
+		vips_buf_appendf(buf, "%*ccaption = \"%s\"\n",  indent, ' ',
+			iobject->caption);
+	vips_buf_appendf(buf, "%*ciObject :: \"%s\"\n",
+		indent, ' ',
+		G_OBJECT_TYPE_NAME(iobject));
 }
 
 static void
@@ -188,6 +201,10 @@ iobject_init(iObject *iobject)
 	/* Init our instance fields.
 	 */
 	iobject->floating = TRUE;
+
+#ifdef DEBUG_LEAK
+	iobject_all = g_slist_prepend(iobject_all, iobject);
+#endif /*DEBUG_LEAK*/
 }
 
 /* Test the name field ... handy with map.
@@ -263,12 +280,12 @@ iobject_ref_sink(iObject *iobject)
 }
 
 void
-iobject_dump(iObject *iobject)
+iobject_dump(iObject *iobject, int indent)
 {
 	char txt[1000];
 	VipsBuf buf = VIPS_BUF_STATIC(txt);
 
-	iobject_info(iobject, &buf);
+	iobject_info(iobject, &buf, indent);
 	printf("%s", vips_buf_all(&buf));
 }
 
@@ -279,4 +296,20 @@ iobject_get_user_name(iObject *object)
 	const char *class_name = IOBJECT_GET_CLASS_NAME(object);
 
 	return user_name ? user_name : class_name;
+}
+
+void
+iobject_leak(void)
+{
+#ifdef DEBUG_LEAK
+	printf("iobject_leak: leak checking ...\n");
+	if (iobject_all) {
+		printf("leaked objects:\n");
+		int n = 0;
+		for (GSList *i = iobject_all; i; i = i->next) {
+			printf("%d) ", n++);
+			iobject_dump(IOBJECT(i->data));
+		}
+	}
+#endif /*DEBUG_LEAK*/
 }

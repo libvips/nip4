@@ -64,6 +64,7 @@
 
 #rowview-frame {
   border-radius: 0px;
+  border-bottom-width: 0px;
 }
 
 #rowview-frame.top {

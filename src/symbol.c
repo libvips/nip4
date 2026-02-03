@@ -504,7 +504,8 @@ symbol_made(Symbol *sym)
 	}
 
 #ifdef DEBUG
-	dump_symbol(sym);
+	int indent = 0;
+	dump_symbol(sym, &indent);
 #endif /*DEBUG*/
 }
 
@@ -543,8 +544,18 @@ symbol_not_defined(Symbol *sym)
 static void *
 symbol_destroy_error(Compile *compile, Symbol *sym)
 {
-	symbol_not_defined(sym);
-	compile_error_set(compile);
+	// don't mess up the error buffer
+	error_push();
+
+	// not for placeholders or zombies ... they get removed during parse
+	// and should not set error states
+	if (sym->type != SYM_ZOMBIE &&
+		!sym->placeholder) {
+		symbol_not_defined(sym);
+		compile_error_set(compile);
+	}
+
+	error_pop();
 
 	return NULL;
 }
@@ -588,15 +599,15 @@ symbol_dispose(GObject *gobject)
 		symbol_dirty_clear(sym);
 	}
 
+	/* Any Compile which refers to us must have errors.
+	 */
+	(void) slist_map(sym->parents,
+		(SListMapFn) symbol_destroy_error, sym);
+
 	/* Strip it down.
 	 */
 	(void) symbol_strip(sym);
 	IDESTROY(sym->tool);
-
-	/* Any exprs which refer to us must have errors.
-	 */
-	(void) slist_map(sym->parents,
-		(SListMapFn) symbol_destroy_error, sym);
 
 	/* Remove links from any expr which refer to us.
 	 */
@@ -764,7 +775,8 @@ symbol_can_add_def(Symbol *sym)
 	/* Is this a local def? A second def is also OK, since we must still be
 	 * parsing.
 	 */
-	if (symbol_get_parent(sym)->type == SYM_VALUE)
+	if (sym->type == SYM_VALUE &&
+		!is_top(sym))
 		return TRUE;
 
 	return FALSE;
@@ -828,7 +840,7 @@ symbol_new_defining(Compile *compile, const char *name)
 			char txt[200];
 			VipsBuf buf = VIPS_BUF_STATIC(txt);
 
-			vips_buf_appendf(&buf, _("Can't redefine %s \"%s\""),
+			vips_buf_appendf(&buf, _("can't redefine %s \"%s\""),
 				decode_SymbolType_user(sym->type), name);
 
 			if (sym->tool &&
@@ -851,6 +863,12 @@ symbol_new_defining(Compile *compile, const char *name)
 	else
 		sym = symbol_new(compile, name);
 
+#ifdef DEBUG_MAKE
+	printf("symbol_new_defining: ");
+	symbol_name_print(sym);
+	printf("(%p)\n", sym);
+#endif /*DEBUG_MAKE*/
+
 	return sym;
 }
 
@@ -870,6 +888,12 @@ symbol_new_reference(Compile *compile, const char *name)
 	/* Note the new dependency.
 	 */
 	compile_link_make(compile, sym);
+
+#ifdef DEBUG_MAKE
+	printf("symbol_new_reference: ");
+	symbol_name_print(sym);
+	printf("\n");
+#endif /*DEBUG_MAKE*/
 
 	return sym;
 }
@@ -1088,9 +1112,9 @@ symbol_recalculate_leaf_sub(Symbol *sym)
 	 *
 	 * Test 2 will fail for mutual top-level recursion.
 	 *
+	 */
 	g_assert(!sym->dirty || symbol_is_leafable(sym));
 	g_assert(symbol_ndirty(sym) == 0);
-	 */
 #endif /*DEBUG_RECALC*/
 
 	error_clear();
@@ -1150,13 +1174,16 @@ symbol_recalculate_leaf_sub(Symbol *sym)
 
 #ifdef DEBUG_RECALC
 			printf("\tsuccess: ");
-			graph_pointer(&sym->expr->root);
+			//graph_pointer(&sym->expr->root);
 #endif /*DEBUG_RECALC*/
 		}
 	}
 #ifdef DEBUG_RECALC
-	else
+	else {
 		printf("\t(found dirty children)\n");
+		int indent = 0;
+		//dump_symbol(sym, &indent);
+	}
 #endif /*DEBUG_RECALC*/
 
 	return NULL;
@@ -1176,11 +1203,11 @@ symbol_recalculate_leaf(void)
 	 */
 	classmodel_dirty_updated();
 
-#ifdef DEBUG
+#ifdef DEBUG_RECALC
 	printf("symbol_recalculate_leaves: Leaf set: ");
 	slist_map(symbol_leaf_set, (SListMapFn) dump_tiny, NULL);
 	printf("\n");
-#endif /*DEBUG*/
+#endif /*DEBUG_RECALC*/
 
 	/* Grab stuff off the leaf set.
 	 */

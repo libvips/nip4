@@ -1063,7 +1063,7 @@ measure_sample across down measure image
         y <- [0 .. down - 1]; x <- [0 .. across - 1]];
 
     image' = decode image;
-    patches = map (\p crop p?0 p?1 sample_width sample_height image') cods;
+    patches = map (\[x, y] crop x y sample_width sample_height image') cods;
     measures = Matrix (map (map mean) (map bandsplit patches));
 }
 

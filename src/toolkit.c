@@ -55,13 +55,14 @@ toolkit_changed(iObject *iobject)
 }
 
 static void
-toolkit_info(iObject *iobject, VipsBuf *buf)
+toolkit_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	Toolkit *kit = TOOLKIT(iobject);
 
-	IOBJECT_CLASS(toolkit_parent_class)->info(iobject, buf);
+	IOBJECT_CLASS(toolkit_parent_class)->info(iobject, buf, indent);
 
-	vips_buf_appendf(buf, "group = \"%s\"\n", IOBJECT(kit->kitg)->name);
+	vips_buf_appendf(buf, "%*cgroup = \"%s\"\n", indent, ' ',
+		IOBJECT(kit->kitg)->name);
 }
 
 static View *

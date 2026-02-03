@@ -67,6 +67,14 @@ workspacedefs_text_changed(GtkTextBuffer *buffer,
 	}
 }
 
+static void *
+workspacedefs_sym_visible(Symbol *sym, int *n)
+{
+	if (is_visible(sym))
+		*n += 1;
+	return NULL;
+}
+
 static void
 workspacedefs_refresh(vObject *vobject)
 {
@@ -99,8 +107,13 @@ workspacedefs_refresh(vObject *vobject)
 	}
 
 	if (ws->local_kit) {
-		int n = icontainer_get_n_children(ICONTAINER(ws->local_kit));
+		int n;
 
+		/* Ignore eg. $$match etc.
+		 */
+		n = 0;
+		icontainer_map(ICONTAINER(ws->local_kit),
+			(icontainer_map_fn) workspacedefs_sym_visible, &n, NULL);
 		vips_buf_appendf(&buf,
 			ngettext("%d definition", "%d definitions", n), n);
 	}
