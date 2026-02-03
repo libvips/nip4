@@ -391,7 +391,6 @@ static void
 row_dispose(GObject *gobject)
 {
 	Row *row = ROW(gobject);
-	Column *col = row_get_column(row);
 
 #ifdef DEBUG_NEW
 	/* Can't use row_name_print(), we may not have a parent.
@@ -401,18 +400,6 @@ row_dispose(GObject *gobject)
 		printf(" (%s)", symbol_name(row->sym));
 	printf("\n");
 #endif /*DEBUG_NEW*/
-
-	/* Reset state. Also see row_parent_remove().
-	 */
-	if (row->expr)
-		expr_error_clear(row->expr);
-
-	row_hide_dependents(row);
-
-	if (col &&
-		col->last_select == row)
-		col->last_select = NULL;
-	row_deselect(row);
 
 	/* Break all recomp links.
 	 */
@@ -628,16 +615,13 @@ row_parent_remove(iContainer *child)
 
 	/* Reset the parts of state which touch our parent.
 	 */
+	row_error_clear(row);
 	row_dirty_clear(row);
 	row_deselect(row);
 	workspace_queue_layout(row->ws);
 
 	row->ws = NULL;
 	row->top_row = NULL;
-
-	/* Don't clear error ... we may no longer have the link to expr. See
-	 * row_dispose() for that.
-	 */
 
 	ICONTAINER_CLASS(row_parent_class)->parent_remove(child);
 }
