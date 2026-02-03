@@ -1,11 +1,6 @@
-check these:
-
-	both modified:   TODO
-	both modified:   share/nip4/start/Image.def
-	both modified:   share/nip4/start/_stdenv.def
-	both modified:   share/nip4/start/_types.def
-
 - delete column containing error does not clear /!\ from tab
+
+	then a crash if you click the /!\ button
 
 
 # menu redesign
