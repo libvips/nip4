@@ -12,9 +12,6 @@ should_pass_tests = [
   'test_stats.ws',
   'test_tasks.ws',
   'test_widgets.ws',
-
-  # test the scripting language
-  'test_snip.def',
 ]
 
 should_fail_tests = [
@@ -31,6 +28,11 @@ demos = [
   'logo/logo2.ws',
   'manual_balance/manual_balance.ws',
   'overlays_and_blending/overlay_blend.ws',
+]
+
+# scripting language tests
+snip_tests = [
+  'test_snip.def',
 ]
 
 foreach name : should_pass_tests
@@ -54,6 +56,12 @@ foreach name : should_fail_tests
     should_fail: true,
     args: ['--test', '--workspace', file],
     env: ['VIPS_NOVECTOR=1'],
+  )
+endforeach
+
+foreach name : snip_tests
+  test(name, nip4_snip,
+    args: [files('snip/' + name)]
   )
 endforeach
 

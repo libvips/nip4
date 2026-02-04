@@ -1,0 +1,15 @@
+// test the _list lib functions
+
+main = unit_test [
+    [any [false, true] == true, "any true"],
+    [any [false, false] == false, "no any true"],
+    [all [true, true] == true, "all true"],
+    [all [false, true] == false, "no all true"],
+    ["" ++ "a" == "a", "concat"],
+    [delete equal 'b' "abcdb" == "acdb", "delete"],
+    [difference equal "asdf" "ad" == "sf", "difference"],
+    [drop 3 "abcd" == "d", "drop"],
+    [dropwhile is_digit "1234pigs" == "pigs", "dropwhile"]
+
+];
+

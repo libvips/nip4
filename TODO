@@ -1,9 +1,24 @@
-- delete column containing error does not clear /!\ from tab
-
-	then a crash if you click the /!\ button
-
-
 # menu redesign
+
+- test "index" .. local multidef
+
+	add to test_snip?
+
+- add test_list to check list processing defs
+
+- use new language features
+
+	_list.def
+	_predicate.def
+	_stdenv.def
+- add #include to snip? probably necessary if we want to use it as a
+  scripting language
+
+	#include "banana/x.def"
+
+  filename found relative to current file
+
+  done in lexer, so can be used anywhere
 
 - add gainmap menu
 
@@ -18,15 +33,12 @@
 
 - infobar in pages-as-bands just shows the first value
 
-- redefining a func in toolkit load should be an error
-
-	argh been bitten by this twice now
-
-	interactive redefine needs to be fine, of course
-
 - test matmul etc, esp mixed image and matrix
 
-	can we make a little test framework?
+	add to test_snip?
+
+	maybe test_snip should test language features and test_menus should
+	check menu definitions
 
 - we still seem to be leaking a ref in ~/x.ws ... wasn't this fixed?
 
@@ -44,7 +56,9 @@
         matmul
         matrix_multiply
 
-- make_xy should be makexy?
+  make_xy should be makexy?
+
+  join_sep shoul dbe joinsep?
 
 - vips_object_new has options at the end :(
 

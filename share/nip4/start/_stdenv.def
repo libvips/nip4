@@ -2537,3 +2537,35 @@ linearu a b x
 sdf options width height shape
     = vips_sdf options (to_real width) (to_real height) shape;
 
+
+/* simple unit tester ... use with eg.
+ *
+ * main = unit_test [
+ *    [true != false, "bool comparison"],
+ *    [1 != 2, "int comparison"]
+ * ];
+ *
+ */
+unit_test test_list
+    = (map (const '.') pass) ++
+      "\n" ++
+      (join_sep "\n" (map print_fail fail))
+{
+    split fn l
+        = foldr split_item [[], []] l
+    {
+        split_item x [pass, fail]
+            = [pass', fail']
+        {
+            pass'
+                = x : pass, fn x
+                = pass;
+            fail'
+                = x : fail, !fn x
+                = fail;
+        }
+    }
+
+    [pass, fail] = split (extract 0) test_list;
+    print_fail [pass, fail] = "FAIL: " ++ fail;
+}

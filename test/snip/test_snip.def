@@ -1,4 +1,4 @@
-#!/usr/bin/env snip
+// test snip language features
 
 // all the image formats we test, and their matching number format
 // we can't use uchar as a number format directly since it'll become 'a' or
@@ -135,56 +135,34 @@ test_lcomp = [
             [[1, 2], [1, 3], [2, 1], [2, 3], [3, 1], [3, 2]];
 }
 
-tests = concat [
-    test_binary "add" add,
-    test_binary "subtract" subtract,
-    test_binary "multiply" multiply,
-    test_binary "divide" test_div,
-    test_unary "square" square,
-    test_unary "constant plus" (add 12),
-    test_unary "plus constant" (converse add 12),
-    test_unary "divided by constant" (converse test_div 3),
-    test_unary "multiply constant" (multiply 7),
-    test_unary "constant multiplied by" (converse multiply 7),
-    test_unary "constant subtracted from" (subtract 4),
-    test_unary "subtract constant" (converse subtract 4),
-    test_deconstruct,
-    test_multidef,
-    test_lcomp,
-    [
-        ["" ++ "a" == "a", "concat"],
-        [hd [1, error "nope"] == 1, "lazy hd"]
-    ]
-]
+test_concat = [
+    [hd [1, error "nope"] == 1, "lazy hd"]
+];
+
+main
+    = map unit_test [
+	    test_binary "add" add,
+	    test_binary "subtract" subtract,
+	    test_binary "multiply" multiply,
+	    test_binary "divide" test_div,
+	    test_unary "square" square,
+	    test_unary "constant plus" (add 12),
+	    test_unary "plus constant" (converse add 12),
+	    test_unary "divided by constant" (converse test_div 3),
+	    test_unary "multiply constant" (multiply 7),
+	    test_unary "constant multiplied by" (converse multiply 7),
+	    test_unary "constant subtracted from" (subtract 4),
+	    test_unary "subtract constant" (converse subtract 4),
+	    test_deconstruct,
+	    test_multidef,
+	    test_lcomp,
+        test_concat
+	]
 {
-    // libvips divide returns 0 for divide by zero
+    // libvips image divide sets 0 for divide by zero
     test_div a b
         = 0, is_real b && b == 0
         = 0, is_complex b && re b == 0 && im b == 0
         = divide a b;
 }
 
-main
-    = (map (const '.') pass) ++
-      "\n" ++
-      (join_sep "\n" (map print_fail fail))
-{
-    split fn l
-        = foldr split_item [[], []] l
-    {
-        split_item x sofar
-            = [pass', fail']
-        {
-            [pass, fail] = sofar;
-            pass'
-                = x : pass, fn x
-                = pass;
-            fail'
-                = x : fail, !fn x
-                = fail;
-        }
-    }
-
-    [pass, fail] = split (extract 0) tests;
-    print_fail x = "FAIL: " ++ x?1;
-}
