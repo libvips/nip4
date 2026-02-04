@@ -618,7 +618,7 @@ classmodel_dispose(GObject *gobject)
  * Things like iImage define an _info() with useful stuff in.
  */
 static void
-classmodel_info(iObject *iobject, VipsBuf *buf)
+classmodel_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 }
 

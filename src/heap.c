@@ -276,11 +276,11 @@ heap_finalize(GObject *gobject)
 }
 
 static void
-heap_info(iObject *iobject, VipsBuf *buf)
+heap_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	Heap *heap = HEAP(iobject);
 
-	vips_buf_appendf(buf, "compile = ");
+	vips_buf_appendf(buf, "%*cheap->compile = ", indent, ' ');
 	if (heap->compile)
 		if (heap->compile->sym) {
 			symbol_qualified_name(heap->compile->sym, buf);
@@ -289,20 +289,29 @@ heap_info(iObject *iobject, VipsBuf *buf)
 		else
 			vips_buf_appendf(buf, "(compile, but no sym)\n");
 	else
-		vips_buf_appendf(buf, "(no compile)\n");
-	vips_buf_appendf(buf, "mxb (max blocks) = %d\n", heap->mxb);
-	vips_buf_appendf(buf, "rsz (nodes per block) = %d\n", heap->rsz);
-	vips_buf_appendf(buf, "nb (number of blocks) = %d\n", heap->nb);
-	vips_buf_appendf(buf, "emark = %d pointers\n",
+		vips_buf_appendf(buf, "%*c(no compile)\n", indent, ' ');
+
+	indent += 2;
+	vips_buf_appendf(buf, "%*cmxb (max blocks) = %d\n", indent, ' ',
+		heap->mxb);
+	vips_buf_appendf(buf, "%*crsz (nodes per block) = %d\n", indent, ' ',
+		heap->rsz);
+	vips_buf_appendf(buf, "%*cnb (number of blocks) = %d\n", indent, ' ',
+		heap->nb);
+	vips_buf_appendf(buf, "%*cemark = %d pointers\n",indent, ' ',
 		g_hash_table_size(heap->emark));
-	vips_buf_appendf(buf, "rmark = %d pointers\n",
+	vips_buf_appendf(buf, "%*crmark = %d pointers\n",indent, ' ',
 		g_hash_table_size(heap->rmark));
-	vips_buf_appendf(buf, "ncells (cells allocated) = %d\n", heap->ncells);
-	vips_buf_appendf(buf, "nfree (cells free at last GC) = %d\n", heap->nfree);
-	vips_buf_appendf(buf, "mtable (Managed blocks) = %d pointers\n",
+	vips_buf_appendf(buf, "%*cncells (cells allocated) = %d\n", indent, ' ',
+		heap->ncells);
+	vips_buf_appendf(buf, "%*cnfree (cells free at last GC) = %d\n",
+		indent, ' ',
+		heap->nfree);
+	vips_buf_appendf(buf, "%*cmtable (Managed blocks) = %d pointers\n",
+		indent, ' ',
 		g_hash_table_size(heap->mtable));
 
-	IOBJECT_CLASS(parent_class)->info(iobject, buf);
+	IOBJECT_CLASS(parent_class)->info(iobject, buf, indent);
 }
 
 /* Empty a heap block.
@@ -453,7 +462,7 @@ heap_link(Heap *heap, Compile *compile, heap_max_fn max_fn, int stsz, int rsz)
 	heap->mxb = 1 + (heap->max_fn(heap) / rsz);
 }
 
-/* Create an empty heap. mxsz is maximum size of heap in units of nodes,
+/* Create an empty heap. max_fn sets the maximum size of heap in nodes,
  * stsz is start size, rsz is heap growth unit.
  */
 Heap *
@@ -818,13 +827,13 @@ heap_getmem(Heap *heap)
 	if (!heap->free) {
 		error_top(_("Heap full"));
 		if (heap->compile) {
-			char txt[100];
-			VipsBuf buf = VIPS_BUF_STATIC(txt);
-
-			compile_name(heap->compile, &buf);
 			error_sub(_("the compile heap for %s has filled, "
 						"make it smaller and less complicated"),
-				vips_buf_all(&buf));
+				symbol_name(heap->compile->sym));
+
+			printf("compile heap for %s has filled\n",
+					symbol_name(heap->compile->sym));
+			printf("\tncells = %d\n", heap->ncells);
 		}
 		else
 			error_sub(_("the main calculation heap has filled, "
@@ -1716,6 +1725,11 @@ copy_node(Heap *heap, HeapNode *ri[], HeapNode *hn, PElement *out)
 	PElement pleft, pright;
 	int i;
 
+	/* This can potentially recurse a lot.
+	 */
+	if (main_is_stack_full())
+		return FALSE;
+
 	/* Look for relocation nodes.
 	 */
 	if (hn->type == TAG_SHARED) {
@@ -1811,17 +1825,8 @@ copy_node(Heap *heap, HeapNode *ri[], HeapNode *hn, PElement *out)
 gboolean
 heap_copy(Heap *heap, Compile *compile, PElement *out)
 {
-	Element *root = &compile->base;
+	Element *base = &compile->base;
 	HeapNode *ri[MAX_RELOC];
-
-	/* Check for possible C stack overflow ... can't go over 2M on most
-	 * systems if we're using (or any of our libs are using) threads.
-	 */
-	if ((char *) main_c_stack_base - (char *) &heap > 2000000) {
-		error_top(_("Overflow error"));
-		error_sub(_("C stack overflow, circular definition"));
-		return FALSE;
-	}
 
 #ifdef DEBUG
 	printf("heap_copy: ");
@@ -1829,20 +1834,11 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 	printf("\n");
 #endif /*DEBUG*/
 
-	/* Check for possible C stack overflow ... can't go over 2M on most
-	 * systems if we're using (or any of our libs are using) threads.
-	 */
-	if ((char *) main_c_stack_base - (char *) &heap > 2000000) {
-		error_top(_("Overflow error"));
-		error_sub(_("C stack overflow, expression too complex"));
-		return FALSE;
-	}
-
-	switch (root->type) {
+	switch (base->type) {
 	case ELEMENT_NODE:
 		/* Need a tree copy.
 		 */
-		if (!copy_node(heap, &ri[0], (HeapNode *) root->ele, out))
+		if (!copy_node(heap, &ri[0], (HeapNode *) base->ele, out))
 			return FALSE;
 		break;
 
@@ -1860,16 +1856,19 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 	case ELEMENT_MANAGED:
 		/* Copy value.
 		 */
-		PEPUTP(out, root->type, root->ele);
+		PEPUTP(out, base->type, base->ele);
 		break;
 
 	case ELEMENT_NOVAL:
-		/* Not compiled yet: compile now, then copy.
+		/* Not yet compiled ... eg. perhaps argv.
 		 */
-		if (compile_object(compile))
+		if (compile_object(compile) ||
+			base->type == ELEMENT_NOVAL)
 			return FALSE;
+
 		if (!heap_copy(heap, compile, out))
 			return FALSE;
+
 		break;
 
 	default:
@@ -2498,7 +2497,7 @@ lisp_pelement(VipsBuf *buf, PElement *base,
 
 	case ELEMENT_MANAGED:
 		vips_buf_appendf(buf, "<Managed* %p, ", PEGETVAL(base));
-		iobject_info(IOBJECT(PEGETVAL(base)), buf);
+		iobject_info(IOBJECT(PEGETVAL(base)), buf, 0);
 		vips_buf_appendf(buf, ">");
 		break;
 

@@ -12,9 +12,6 @@ should_pass_tests = [
   'test_stats.ws',
   'test_tasks.ws',
   'test_widgets.ws',
-
-  # test the scripting language
-  'test_snip.def',
 ]
 
 should_fail_tests = [
@@ -33,12 +30,17 @@ demos = [
   'overlays_and_blending/overlay_blend.ws',
 ]
 
+# scripting language tests
+snip_tests = [
+  'test_snip.def',
+]
+
 foreach name : should_pass_tests
   file = files('workspaces/' + name)
-  test(name, nip4_batch,
+  test(name, nip4_snip,
     args: ['--test', '--workspace', file],
   )
-  test(name, nip4_batch,
+  test(name, nip4_snip,
     args: ['--test', '--workspace', file],
     env: ['VIPS_NOVECTOR=1']
   )
@@ -46,24 +48,30 @@ endforeach
 
 foreach name : should_fail_tests
   file = files('workspaces/' + name)
-  test(name, nip4_batch,
+  test(name, nip4_snip,
     should_fail: true,
     args: ['--test', '--workspace', file],
   )
-  test(name, nip4_batch,
+  test(name, nip4_snip,
     should_fail: true,
     args: ['--test', '--workspace', file],
     env: ['VIPS_NOVECTOR=1'],
   )
 endforeach
 
+foreach name : snip_tests
+  test(name, nip4_snip,
+    args: [files('snip/' + name)]
+  )
+endforeach
+
 foreach name : demos
   file = files(project_source_root + '/share/nip4/data/examples/' + name)
-  test(name, nip4_batch,
+  test(name, nip4_snip,
     args: ['--test', '--workspace', file],
   )
   # repeat, with the vector system disabled
-  test(name, nip4_batch,
+  test(name, nip4_snip,
     args: ['--test', '--workspace', file],
     env: ['VIPS_NOVECTOR=1'],
   )

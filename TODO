@@ -7,21 +7,45 @@
 
 # menu redesign
 
-- delete column containing error does not clear /!\ from tab
+- test "index" .. local multidef
+
+	add to test_snip?
+
+- add test_list to check list processing defs
+
+- use new language features
+
+	_list.def
+	_predicate.def
+	_stdenv.def
+- add #include to snip? probably necessary if we want to use it as a
+  scripting language
+
+	#include "banana/x.def"
+
+  filename found relative to current file
+
+  done in lexer, so can be used anywhere
+
+- add gainmap menu
+
+	get gainmap
+	set gainmap
+	remove gainmap
+	edit other gainmap fields?
+	to scrgb
+	view image with gainmap? via conversion to scrgb I guess
 
 - Blend_alpha_item should use composite instead
 
 - infobar in pages-as-bands just shows the first value
 
-- redefining a func in toolkit load should be an error
-
-	argh been bitten by this twice now
-
-	interactive redefine needs to be fine, of course
-
 - test matmul etc, esp mixed image and matrix
 
-	can we make a little test framework?
+	add to test_snip?
+
+	maybe test_snip should test language features and test_menus should
+	check menu definitions
 
 - we still seem to be leaking a ref in ~/x.ws ... wasn't this fixed?
 
@@ -39,7 +63,9 @@
         matmul
         matrix_multiply
 
-- make_xy should be makexy?
+  make_xy should be makexy?
+
+  join_sep shoul dbe joinsep?
 
 - vips_object_new has options at the end :(
 
@@ -135,22 +161,60 @@
 
 - add magick7 support to _magick.def
 
+- better start dir for file dialogs
+
+	should be cwd
+
+	a bit random right now, eg. mainwindow open and toolkit open start in
+	different places
+
+- "nip4 try.def x.ws" ought to work
+
+	only images and workspaces as CLI args right now
+
+- add "copy value" to rowview menu ... copy value display text to clipboard
+
+	render more text? truncation could be annoying
+
+- improve row layout (see notebook)
+
+- we heap_copy() the world when we make a row (all funcs copied), is this
+  necessary?
+
+- linear match
+
+	allow refine tie points + no-resize atr the same time
+
+	show computed transform
+
+- try
+
+	Edit toolkits ...
+	[a, b, c] = [1, 2, 3];
+	|>
+	add a space
+	|>
+
+  error: second def of "c"
+
+  probably OK -- we can always delete the three defs separately, and this has
+  to be a very rare case
+
+  add "delete tool"?
+
+- do row select on button up, and as part of the mainwindow event state
+  machine
+
+	same for up down buttons
+
+	same for textview flip to formula
+
+	need our own tiny subcolumnview event system
+
 - nicholas's bug report
 
-- lcomps leave stray unreffed symbols in "list unresolved"
-
-    Image_transform_item.Resize_item.Size_within_item.action.within ($SAVEDIR/start/Image.def:509)  refers to undefined symbol h
-    Image_transform_item.Resize_item.Size_within_item.action.within ($SAVEDIR/start/Image.def:509)  refers to undefined symbol w
-
-- rework pattern matching in lcomps
-
-- what does the programming window do for multiple defs?
-
-    probably need to follow next_def and concatenate them all
-
-- dir should hide $$vars
-
-- programming window is showing generated syms, like $$pattern_lhs0?
+- parse_onedef() was using single_definition, which also increments
+  tool_position, do we need to do that?
 
 - ban patterns in class parameters
 
@@ -182,6 +246,24 @@
     fred a:b:x = a + b;
 
 - remove remove prefs workspace stuff?
+
+- we could allow
+
+	fred x x = 12;
+
+  meaning, two args, must be equal
+
+	fred x [x, y, z] = y + z;
+
+  meaning first list element must equal first arg
+
+- make "About" non-modal and update on gc
+
+	use progress system?
+
+	add a new GC signal
+
+- remove prefs workspace stuff?
 
     things like max heap size should be settable ... maybe pres are useful?
 

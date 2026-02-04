@@ -1078,11 +1078,8 @@ reduce_spine(Reduce *rc, PElement *out)
 	/* Check for possible C stack overflow ... can't go over 2M on most
 	 * systems if we're using (or any of our libs are using) threads.
 	 */
-	if ((char *) main_c_stack_base - (char *) &rc > 2000000) {
-		error_top(_("Overflow error"));
-		error_sub(_("C stack overflow, expression too complex"));
+	if (main_is_stack_full())
 		reduce_throw(rc);
-	}
 
 	/* Point node pointer at reduction start.
 	 */
@@ -1188,17 +1185,24 @@ reduce_start:
 		case SYM_VALUE: {
 			Compile *compile = sym->expr->compile;
 
-			/* Make sure it's clean ... we can get
-			 * links to dirty syms through dynamic dependencies.
+			/* If it's dirty, something has gone wrong and we'll need to
+			 * backtrack. This can happen with dynamic deps.
 			 */
 			if (sym->dirty) {
-				char txt[256];
-				VipsBuf buf = VIPS_BUF_STATIC(txt);
+				// get the error from the expr, if we can, otherwise fall
+				// back
+				if (sym->expr->err)
+					expr_error_get(sym->expr);
+				else {
+					char txt[256];
+					VipsBuf buf = VIPS_BUF_STATIC(txt);
 
-				symbol_qualified_name(sym, &buf);
+					symbol_qualified_name(sym, &buf);
 
-				error_top(_("No value"));
-				error_sub(_("symbol \"%s\" has no value"), vips_buf_all(&buf));
+					error_top(_("No value"));
+					error_sub(_("symbol \"%s\" has no value"),
+						vips_buf_all(&buf));
+				}
 
 				reduce_throw(rc);
 			}
@@ -1241,9 +1245,6 @@ reduce_start:
 		case SYM_PARAM:
 			/* All params should be taken out by var abstract.
 			 */
-			printf("sym-param found, argh: ");
-			symbol_name_print(sym);
-			printf("\n");
 			g_assert(FALSE);
 			break;
 

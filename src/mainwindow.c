@@ -183,6 +183,7 @@ mainwindow_open_workspace(Mainwindow *main, const char *filename)
 
 	Mainwindow *new_main = mainwindow_new(APP(app), wsg);
 	gtk_window_present(GTK_WINDOW(new_main));
+	mainwindow_cull();
 
 	symbol_recalculate_all();
 
@@ -904,10 +905,10 @@ mainwindow_title_update(Mainwindow *main)
 		vips_buf_appends(&title, _("unsaved workspace"));
 
 	if ((ws = mainwindow_get_workspace(main))) {
-		vips_buf_appends(&title, " - ");
+		vips_buf_appends(&title, " — ");
 		vips_buf_appendf(&title, "%s", IOBJECT(ws->sym)->name);
 		if (ws->kitg->compat_major) {
-			vips_buf_appends(&title, " - ");
+			vips_buf_appends(&title, " — ");
 			vips_buf_appends(&title, _("compatibility mode"));
 			vips_buf_appendf(&title, " %d.%d",
 				ws->kitg->compat_major,
@@ -1104,6 +1105,15 @@ mainwindow_cull_sub(Mainwindow *main)
 	return NULL;
 }
 
+static void *
+mainwindow_is_cullable(Mainwindow *main, GSList **cullable)
+{
+	if (workspacegroup_is_empty(main->wsg))
+		*cullable = g_slist_prepend(*cullable, main);
+
+	return NULL;
+}
+
 static guint mainwindow_cull_timeout_id = 0;
 
 static gboolean
@@ -1111,7 +1121,20 @@ mainwindow_cull_timeout(gpointer user_data)
 {
 	mainwindow_cull_timeout_id = 0;
 
-	slist_map(mainwindow_all, (SListMapFn) mainwindow_cull_sub, NULL);
+	/* We don't want to cull *all* our windows and make ourselves exit, so we
+	 * have to do this in two passes: build a list of cullable windows, then
+	 * remove all but one.
+	 */
+	g_autoptr(GSList) cullable = NULL;
+	slist_map(mainwindow_all,
+		(SListMapFn) mainwindow_is_cullable, &cullable);
+
+	// ie. if we would cull all windows, leave one
+	GSList *p =
+		cullable && g_slist_length(cullable) == g_slist_length(mainwindow_all) ?
+		cullable->next : cullable;
+	slist_map(p,
+		(SListMapFn) mainwindow_cull_sub, NULL);
 
 	return FALSE;
 }

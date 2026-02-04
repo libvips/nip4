@@ -47,7 +47,7 @@ static GSList *managed_all = NULL;
 static void *
 managed_print_info(Managed *managed, VipsBuf *buf)
 {
-	iobject_info(IOBJECT(managed), buf);
+	iobject_info(IOBJECT(managed), buf, 2);
 	vips_buf_appends(buf, "\n");
 
 	return NULL;
@@ -154,17 +154,21 @@ managed_finalize(GObject *gobject)
  * up, don't print more than one line.
  */
 static void
-managed_info(iObject *iobject, VipsBuf *buf)
+managed_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 #ifdef DEBUG
 	Managed *managed = MANAGED(iobject);
 
-	vips_buf_appendf(buf, "managed-object %p\n", managed);
-	vips_buf_appendf(buf, "managed->count = %d\n", managed->count);
-	vips_buf_appendf(buf, "managed->marked = %d\n", managed->marked);
+	vips_buf_appendf(buf, "%*cmanaged-object %p\n", indent, ' ',
+		managed);
+	vips_buf_appendf(buf, "%*cmanaged->count = %d\n", indent, ' ',
+		managed->count);
+	vips_buf_appendf(buf, "%*cmanaged->marked = %d\n", indent, ' ',
+		managed->marked);
 #endif /*DEBUG*/
 
-	vips_buf_appendf(buf, "%s %p", G_OBJECT_TYPE_NAME(iobject), iobject);
+	vips_buf_appendf(buf, "%*c%s %p", indent, ' ',
+		G_OBJECT_TYPE_NAME(iobject), iobject);
 }
 
 static void

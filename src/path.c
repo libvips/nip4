@@ -20,7 +20,7 @@
 
  */
 
-/* just load .defs/.wses from "."
+/* just load startup defs/.wses from "."
 #define DEBUG_LOCAL
  */
 

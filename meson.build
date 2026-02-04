@@ -1,6 +1,6 @@
 project('nip4', 'c',
   # ie. a major after nip2 8.9 for workspace save file versioning
-  version: '9.0.15',
+  version: '9.0.16',
   license: 'GPL',
   meson_version: '>=0.64',
   default_options: [
@@ -33,6 +33,10 @@ if get_option('optimization') not in ['0', 'g']
   add_project_arguments('-DG_DISABLE_CHECKS', language: ['cpp', 'c'])
   add_project_arguments('-DG_DISABLE_ASSERT', language: ['cpp', 'c'])
   add_project_arguments('-DRELEASE', language: ['cpp', 'c'])
+endif
+
+if get_option('flatpak')
+  add_project_arguments('-DFLATPAK', language: ['cpp', 'c'])
 endif
 
 # we should probably have more flexibility here

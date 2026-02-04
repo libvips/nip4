@@ -48,22 +48,22 @@ struct _Expr {
 	 */
 	iContainer parent_object;
 
-	Symbol *sym; /* We are an expr for this symbol, scopewise */
-	Row *row;	 /* (optional) we have this display */
+	Symbol *sym;			/* We are an expr for this symbol, scopewise */
+	Row *row;				/* (optional) we have this display */
 
-	Compile *compile; /* Our compiled code */
+	Compile *compile;		/* Our compiled code */
 
-	GSList *static_links;  /* Static LinkExprs which reference us */
-	GSList *dynamic_links; /* Dynamic LinkExprs which reference us */
+	GSList *static_links;	/* Static LinkExprs which reference us */
+	GSList *dynamic_links;	/* Dynamic LinkExprs which reference us */
 
-	PElement root; /* Pointer to value of this expr */
+	PElement root;			/* Pointer to value of this expr */
 
 	/* Are we recorded as having an Imageinfo as a value? Use this to
 	 * unlink us from the last ii we were linked to.
 	 */
 	Imageinfo *imageinfo;
 
-	gboolean err; /* TRUE if there is an error in this expr */
+	gboolean err;			/* TRUE if there is an error in this expr */
 	char *error_top;
 	char *error_sub;
 };

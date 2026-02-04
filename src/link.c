@@ -37,8 +37,10 @@
 void *
 link_expr_destroy(LinkExpr *le)
 {
-	GSList **llinks = le->dynamic ? &le->link->dynamic_links : &le->link->static_links;
-	GSList **elinks = le->dynamic ? &le->expr->dynamic_links : &le->expr->static_links;
+	GSList **llinks = le->dynamic ?
+		&le->link->dynamic_links : &le->link->static_links;
+	GSList **elinks = le->dynamic ?
+		&le->expr->dynamic_links : &le->expr->static_links;
 
 #ifdef DEBUG
 	printf("link_expr_destroy: removing expr ");
@@ -465,7 +467,8 @@ symbol_link_build(Symbol *sym)
 	printf("symbol_link_build: ");
 	symbol_name_print(sym);
 	printf("\n");
-	dump_links(sym);
+	int indent = 0;
+	dump_links(sym, &indent);
 #endif /*DEBUG*/
 }
 

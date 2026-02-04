@@ -197,7 +197,7 @@ workspacegroupview_add_column_item(Column *col, void *user_data)
 	VipsBuf buf = VIPS_BUF_STATIC(txt);
 	vips_buf_appendf(&buf, "%s", IOBJECT(col)->name);
 	if (IOBJECT(col)->caption)
-		vips_buf_appendf(&buf, " - %s", IOBJECT(col)->caption);
+		vips_buf_appendf(&buf, " — %s", IOBJECT(col)->caption);
 	GMenuItem *item = g_menu_item_new(vips_buf_all(&buf), NULL);
 	GVariant *target = g_variant_new_string(IOBJECT(col)->name);
 	g_menu_item_set_action_and_target_value(item, "win.column-merge", target);

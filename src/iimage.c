@@ -92,14 +92,14 @@ iimage_generate_caption(iObject *iobject)
 
 	if (ii) {
 		vips_buf_appends(buf, ", ");
-		iobject_info(IOBJECT(iimage->value.ii), buf);
+		iobject_info(IOBJECT(iimage->value.ii), buf, 0);
 	}
 
 	return vips_buf_all(buf);
 }
 
 static void
-iimage_info(iObject *iobject, VipsBuf *buf)
+iimage_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	iImage *iimage = IIMAGE(iobject);
 	Imageinfo *ii = iimage->value.ii;
@@ -111,6 +111,7 @@ iimage_info(iObject *iobject, VipsBuf *buf)
 
 		if (vips_image_get_typeof(image, ORIGINAL_FILENAME) != 0) {
 			if (!vips_image_get_string(image, ORIGINAL_FILENAME, &filename)) {
+				vips_buf_appendf(buf, "%*c", indent, ' ');
 				vips_buf_appends(buf, _("Original filename"));
 				vips_buf_appendf(buf, ": %s\n", filename);
 			}

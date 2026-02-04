@@ -39,6 +39,13 @@ static GOptionEntry main_gui_options[] = {
 int
 main(int argc, char **argv)
 {
+#ifdef FLATPAK
+	/* In flatpak builds, don't pick up VIPSHOME from the environ, we want the
+	 * value detected for this install.
+	 */
+	g_unsetenv("VIPSHOME");
+#endif /*FLATPAK*/
+
 	if (VIPS_INIT(argv[0]))
 		vips_error_exit("unable to start libvips");
 

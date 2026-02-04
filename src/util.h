@@ -51,14 +51,15 @@
 		(B) = swapp_t; \
 	}
 
-extern VipsBuf error_top_buf;
-extern VipsBuf error_sub_buf;
+#define MAX_ERROR_LENGTH (1024)
+
+void error_init(void);
+void error_clear(void);
+void error_push(void);
+void error_pop(void);
 
 void error(const char *fmt, ...)
 	__attribute__((noreturn, format(printf, 1, 2)));
-void error_block(void); /* Block updates to error_string */
-void error_unblock(void);
-void error_clear(void);
 void error_top(const char *fmt, ...)
 	__attribute__((format(printf, 1, 2)));
 void error_sub(const char *fmt, ...)

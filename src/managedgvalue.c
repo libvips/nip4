@@ -51,16 +51,17 @@ managedgvalue_dispose(GObject *gobject)
 }
 
 static void
-managedgvalue_info(iObject *iobject, VipsBuf *buf)
+managedgvalue_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	Managedgvalue *managedgvalue = MANAGEDGVALUE(iobject);
 	char *value_str;
 
 	value_str = g_strdup_value_contents(&managedgvalue->value);
-	vips_buf_appendf(buf, "managedgvalue->value = %s\n", value_str);
+	vips_buf_appendf(buf, "%*cmanagedgvalue->value = %s\n", indent, ' ',
+		value_str);
 	g_free(value_str);
 
-	IOBJECT_CLASS(managedgvalue_parent_class)->info(iobject, buf);
+	IOBJECT_CLASS(managedgvalue_parent_class)->info(iobject, buf, indent);
 }
 
 static void

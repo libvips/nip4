@@ -104,8 +104,8 @@ void scope_reset(void);
 
 /* Helper functions.
  */
-void *parse_toplevel_end(Symbol *sym);
 void *parse_access_end(Symbol *sym, Symbol *main);
+
 %}
 
 %union {
@@ -115,10 +115,11 @@ void *parse_access_end(Symbol *sym, Symbol *main);
     ParseConst yy_const;
     UnOp yy_uop;
     BinOp yy_binop;
+    Symbol *yy_sym;
 }
 
-%token TK_TAG TK_IDENT TK_CONST TK_DOTDOTDOT TK_LAMBDA TK_FROM TK_TO TK_SUCHTHAT
-%token TK_UMINUS TK_UPLUS TK_POW
+%token TK_TAG TK_IDENT TK_CONST TK_DOTDOTDOT TK_LAMBDA TK_FROM
+%token TK_UMINUS TK_UPLUS TK_POW TK_SUCHTHAT TK_MAP
 %token TK_LESS TK_LESSEQ TK_MORE TK_MOREEQ TK_NOTEQ
 %token TK_LAND TK_LOR TK_BAND TK_BOR TK_JOIN TK_DIFF
 %token TK_IF TK_THEN TK_ELSE
@@ -126,7 +127,8 @@ void *parse_access_end(Symbol *sym, Symbol *main);
 %token TK_INT TK_FLOAT TK_DOUBLE TK_SIGNED TK_UNSIGNED TK_COMPLEX
 %token TK_SEPARATOR TK_DIALOG TK_LSHIFT TK_RSHIFT
 
-%type <yy_node> expr binop uop rhs list_expression comma_list body
+%type <yy_node> expr binop uop rhs comma_list body
+%type <yy_node> list_expression list_expression_contents
 %type <yy_node> simple_pattern complex_pattern list_pattern
 %type <yy_node> leaf_pattern
 %type <yy_node> crhs cexprlist prhs lambda
@@ -137,7 +139,7 @@ void *parse_access_end(Symbol *sym, Symbol *main);
 %left TK_LAMBDA
 %nonassoc TK_IF
 %left ','
-%left TK_TO
+%left TK_MAP
 %left TK_LOR
 %left TK_LAND '@'
 %left TK_BOR
@@ -171,8 +173,8 @@ void *parse_access_end(Symbol *sym, Symbol *main);
   which is also an expr. We don't know which branch to take until we see a
   '<' or a ';'.
 
-  Use bison's GLR system to parse this, and ignore the first 13 reduce/reduce
-  conflicts caused by this ambiguity.
+  Use bison's GLR system to parse this, and ignore the first 9 reduce/reduce
+  and 4 shift/reduce conflicts caused by this ambiguity.
 
   FIXME ... we now depend on bison, but we still have some yacc compatibility
   stuff in here, and we don't use all of bison's nice features (eg. for
@@ -181,7 +183,8 @@ void *parse_access_end(Symbol *sym, Symbol *main);
  */
 
 %glr-parser
-%expect-rr 13
+%expect 4
+%expect-rr 9
 
 %define parse.error verbose
 
@@ -302,7 +305,8 @@ definition:
          * window use this to work out what sym to display after a
          * parse. symbol_dispose() is careful to NULL this out.
          */
-        current_compile->last_sym = sym;
+        if (is_visible(sym))
+            current_compile->last_sym = sym;
 
         /* Initialise symbol parsing variables. Save old current symbol,
          * add new one.
@@ -323,38 +327,29 @@ definition:
     params_plus_rhs {
         compile_check(current_compile);
 
-        /* Link unresolved names into the outer scope.
-         */
-        compile_resolve_names(current_compile,
-            compile_get_parent(current_compile));
-
         /* Is this (pattern = rhs)? current_symbol is $$valueN and we need
          * to make a set of peer symbols which access that.
          */
         if ($1->type != NODE_LEAF) {
             Compile *parent = compile_get_parent(current_compile);
-            GSList *built_syms;
-
-            built_syms = compile_pattern(parent, current_symbol, $1);
-
-            /* We may have made some top levels.
-             */
-            if (is_scope(symbol_get_parent(current_symbol)))
-                slist_map(built_syms, (SListMapFn) parse_toplevel_end, NULL);
+            g_autoptr(GSList) built_syms =
+                compile_pattern(parent, current_symbol, $1);
 
             /* Note the source code on each of the access funcs.
              */
             slist_map(built_syms,
                 (SListMapFn) parse_access_end, current_symbol);
-
-            g_slist_free(built_syms);
         }
+        else if (is_scope(symbol_get_parent(current_symbol)) &&
+            is_visible(current_symbol) &&
+            current_kit) {
+            // End of a toplevel ... make a tool and add it.
+            Tool *tool;
 
-        /* Is this the end of a top-level? Needs extra work to add to
-         * the enclosing toolkit etc.
-         */
-        if (is_scope(symbol_get_parent(current_symbol)))
-            parse_toplevel_end(current_symbol);
+            tool = tool_new_sym(current_kit, tool_position, current_symbol);
+            tool->lineno = last_top_lineno;
+            symbol_made(current_symbol);
+        }
 
         scope_pop();
     }
@@ -413,9 +408,8 @@ params_plus_rhs:
     }
     ;
 
-params:
-    /* Empty */ |
-    params simple_pattern {
+single_param:
+    simple_pattern {
         /* If the pattern is just an identifier, make it a direct
          * parameter. Otherwise make an anon param and put the pattern
          * in as a local with the same id.
@@ -426,10 +420,14 @@ params:
          *
          *  fred $$arg42 = 12 { $$patt42 = [a]; }
          *
-         * A later pass creates the "a = $$arg42?0" definition.
+         * then compile_pattern() transforms to:
+         *
+         *  fred $$arg42 = 12 { $$match42 = is_list $$arg43 && is_list_len
+         *  $$arg422; a = $$arg42?0 }
+         *
          */
-        if ($2->type == NODE_LEAF) {
-            const char *name = IOBJECT($2->leaf)->name;
+        if ($1->type == NODE_LEAF) {
+            const char *name = IOBJECT($1->leaf)->name;
 
             /* A single name ... make the zombie into a parameter.
              */
@@ -439,7 +437,7 @@ params:
         else {
             char name[256];
 
-            g_snprintf(name, 256, "$$arg%d", parse_object_id);
+            g_snprintf(name, 256, "$$arg%d", parse_object_id++);
             Symbol *arg = symbol_new_defining(current_compile, name);
             arg->generated = TRUE;
             (void) symbol_parameter_init(arg);
@@ -447,25 +445,26 @@ params:
             /* Use the pattern to make a match func plus a set of locals
              * which access this arg.
              */
-            GSList *built_syms = compile_pattern(current_compile, arg, $2);
+            GSList *built_syms = compile_pattern(current_compile, arg, $1);
 
             // note the match func for the codegen pass
-            if (built_syms)
+            if (built_syms) {
                 current_compile->matchers =
                     g_slist_prepend(current_compile->matchers,
                         SYMBOL(built_syms->data));
+                current_compile->sym->needs_codegen = TRUE;
+            }
 
             g_slist_free(built_syms);
 
             current_compile->params_include_patterns = TRUE;
-            current_compile->sym->needs_codegen = TRUE;
-
-            /* Tag the toplevel as needing codegen so we don't have to
-             * search every symbol.
-             */
-            symbol_get_top(current_compile->sym)->needs_codegen = TRUE;
         }
     }
+    ;
+
+params:
+    /* Empty */ |
+    params single_param
     ;
 
 body :
@@ -511,10 +510,6 @@ crhs:
         /* Do some checking.
          */
         compile_check(current_compile);
-
-        /* Link unresolved names.
-         */
-        compile_resolve_names(current_compile, parent);
 
         scope_pop();
 
@@ -574,7 +569,7 @@ expr:
     } |
     TK_IDENT {
         $$ = tree_leaf_new(current_compile, $1);
-        g_free( $1 );
+        g_free($1);
     } |
     TK_TAG {
         $$ = tree_tag_new(current_compile, $1);
@@ -602,7 +597,7 @@ expr:
     ;
 
 lambda:
-    TK_LAMBDA TK_IDENT %prec TK_LAMBDA {
+    TK_LAMBDA {
         char name[256];
         Symbol *sym;
 
@@ -621,56 +616,30 @@ lambda:
         scope_push();
         current_symbol = sym;
         current_compile = sym->expr->compile;
-
-        /* Make the parameter.
-         */
-        sym = symbol_new_defining(current_compile, $2);
-        symbol_parameter_init(sym);
-        g_free($2);
     }
-    expr {
-        Symbol *sym;
-
+    single_param expr %prec TK_LAMBDA {
         current_compile->tree = $4;
 
         if (!compile_check(current_compile))
             yyerror(error_get_sub());
 
-        /* Link unresolved names in to the outer scope.
-         */
-        compile_resolve_names(current_compile,
-            compile_get_parent(current_compile));
-
         /* The value of the expr is the anon we defined.
          */
-        sym = current_symbol;
+        Symbol *sym = current_symbol;
         scope_pop();
         $$ = tree_leafsym_new(current_compile, sym);
     }
     ;
 
 list_expression:
-    '[' expr TK_DOTDOTDOT ']' {
-        $$ = tree_generator_new(current_compile, $2, NULL, NULL);
-    } |
-    '[' expr TK_DOTDOTDOT expr ']' {
-        $$ = tree_generator_new(current_compile, $2, NULL, $4);
-    } |
-    '[' expr ',' expr TK_DOTDOTDOT ']' {
-        $$ = tree_generator_new(current_compile, $2, $4, NULL);
-    } |
-    '[' expr ',' expr TK_DOTDOTDOT expr ']' {
-        $$ = tree_generator_new(current_compile, $2, $4, $6);
-    } |
-    '[' expr TK_SUCHTHAT {
+    '[' {
         char name[256];
         Symbol *sym;
-        Compile *enclosing = current_compile;
 
-        /* Make an anonymous symbol local to the current sym, copy
-         * the map expr inside that.
+        /* Make an anonymous symbol local to the current sym to hold any list
+         * objects we create. For example, this could be an lcomp.
          */
-        g_snprintf(name, 256, "$$lcomp%d", parse_object_id++);
+        g_snprintf(name, 256, "$$list%d", parse_object_id++);
         sym = symbol_new_defining(current_compile, name);
         (void) symbol_user_init(sym);
         sym->generated = TRUE;
@@ -682,52 +651,70 @@ list_expression:
         current_symbol = sym;
         current_compile = sym->expr->compile;
 
-        /* Somewhere to save the result expr. We have to copy the
-         * expr, as we want it to be bound in $$lcomp's context so
-         * that it can see the generators.
-         */
-        sym = symbol_new_defining(current_compile, "$$result");
-        sym->generated = TRUE;
-        sym->placeholder = TRUE;
-        (void) symbol_user_init(sym);
-        (void) compile_new_local(sym->expr);
-        sym->expr->compile->tree = compile_copy_tree(enclosing, $2,
-            sym->expr->compile);
+    /* Later stages need the anon sym.
+     */
+    $<yy_sym>$ = sym;
     }
-    generator frompred_list ']' {
-        Symbol *sym;
-
-        /* The map expr can refer to generator names. Resolve inwards
-         * so it links to the generators.
-         */
-        compile_resolve_names(compile_get_parent(current_compile),
-            current_compile);
-
-        /* Generate the code for the list comp.
-         */
-        compile_lcomp(current_compile);
-
-        compile_check(current_compile);
-
-        /* Link unresolved names outwards.
-         */
-        compile_resolve_names(current_compile,
-            compile_get_parent(current_compile));
-
-        /* The value of the expr is the anon we defined.
-         */
-        sym = current_symbol;
+    list_expression_contents {
+    /* The tree we generated is the value of $$listN
+     */
+    current_symbol->expr->compile->tree = $3;
+    }
+    ']' {
         scope_pop();
-        $$ = tree_leafsym_new(current_compile, sym);
-    } |
-    '[' comma_list ']' {
-        $$ = $2;
+
+        /* The value of the expr is a ref to the anon we defined.
+     *
+     * This must come after the pop, since its the old compile which
+     * refs the anon symbol.
+         */
+        $$ = tree_leafsym_new(current_compile, $<yy_sym>2);
     } |
     '[' ']' {
         ParseConst elist;
 
         elist.type = PARSE_CONST_ELIST;
         $$ = tree_const_new(current_compile, elist);
+    }
+    ;
+
+list_expression_contents:
+    expr TK_DOTDOTDOT {
+        $$ = tree_generator_new(current_compile, $1, NULL, NULL);
+    } |
+    expr TK_DOTDOTDOT expr {
+        $$ = tree_generator_new(current_compile, $1, NULL, $3);
+    } |
+    expr ',' expr TK_DOTDOTDOT {
+        $$ = tree_generator_new(current_compile, $1, $3, NULL);
+    } |
+    expr ',' expr TK_DOTDOTDOT expr {
+        $$ = tree_generator_new(current_compile, $1, $3, $5);
+    } |
+    expr TK_SUCHTHAT {
+        /* Somewhere to save the result expr.
+         */
+        Symbol *sym = symbol_new_defining(current_compile, "$$result");
+        sym->generated = TRUE;
+        sym->placeholder = TRUE;
+        (void) symbol_user_init(sym);
+        (void) compile_new_local(sym->expr);
+        sym->expr->compile->tree = $1;
+    }
+    generator frompred_list {
+        /* Generate the code for the list comp.
+         */
+        compile_lcomp(current_compile);
+        compile_check(current_compile);
+
+        /* lcomp compile sets the value of $$listN, just return that (our
+         * enclosing production will set it again pointlessly).
+         */
+        $$ = current_symbol->expr->compile->tree;
+
+    } |
+    comma_list {
+        $$ = $1;
     }
     ;
 
@@ -848,10 +835,10 @@ binop:
         $$ = tree_binop_new(current_compile, BI_LESSEQ, $1, $3);
     } |
     expr TK_MORE expr {
-        $$ = tree_binop_new(current_compile, BI_MORE, $1, $3);
+        $$ = tree_binop_new(current_compile, BI_LESS, $3, $1);
     } |
     expr TK_MOREEQ expr {
-        $$ = tree_binop_new(current_compile, BI_MOREEQ, $1, $3);
+        $$ = tree_binop_new(current_compile, BI_LESSEQ, $3, $1);
     } |
     expr TK_EQ expr {
         $$ = tree_binop_new(current_compile, BI_EQ, $1, $3);
@@ -879,7 +866,7 @@ binop:
 
         $$ = pn1;
     } |
-    expr TK_TO expr {
+    expr TK_MAP expr {
         ParseNode *pn;
 
         pn = tree_leaf_new(current_compile, "mknvpair");
@@ -969,7 +956,8 @@ simple_pattern:
     }
     ;
 
-/* Stuff that can appear in a complex (a, b) pattern.
+/* Stuff that can appear in a complex (a, b) pattern. We make a reference that
+ * will get replaced by a definition in the post-parse phase.
  */
 leaf_pattern:
     TK_IDENT {
@@ -1053,7 +1041,8 @@ nip2yyerror(const char *sub, ...)
 
     error_top(_("Parse error"));
 
-    if (current_compile && current_compile->last_sym)
+    if (current_compile &&
+    current_compile->last_sym)
         error_sub(_("Error in %s: %s"),
             IOBJECT(current_compile->last_sym)->name, buf);
     else
@@ -1254,8 +1243,7 @@ is_EOF(void)
 }
 
 /* Return the text we have accumulated for the current definition. Remove
- * leading and trailing whitespace and spare semicolons. out needs to be
- * MAX_STRSIZE.
+ * leading and trailing whitespace. out needs to be MAX_STRSIZE.
  */
 char *
 input_text(char *out)
@@ -1268,10 +1256,10 @@ input_text(char *out)
     int len;
     int i;
 
-    for (i = start; i < end && (isspace(buf[i]) || buf[i] == ';'); i++)
+    for (i = start; i < end && isspace(buf[i]); i++)
         ;
     start = i;
-    for (i = end - 1; i > start && (isspace(buf[i]) || buf[i] == ';'); i--)
+    for (i = end - 1; i > start && isspace(buf[i]); i--)
         ;
     end = i + 1;
 
@@ -1426,20 +1414,6 @@ scope_reset(void)
     scope_sp = 0;
 }
 
-/* End of top level parse. Fix up the symbol.
- */
-void *
-parse_toplevel_end(Symbol *sym)
-{
-    Tool *tool;
-
-    tool = tool_new_sym(current_kit, tool_position, sym);
-    tool->lineno = last_top_lineno;
-    symbol_made(sym);
-
-    return NULL;
-}
-
 /* Built a pattern access definition. Set the various text fragments from the
  * def we are drived from.
  */
@@ -1451,6 +1425,53 @@ parse_access_end(Symbol *sym, Symbol *main)
     VIPS_SETSTR(sym->expr->compile->text, main->expr->compile->text);
 
     return NULL;
+}
+
+/* End of parse for a toplevel. Do any codegen, then link and do
+ * symbol_made() to build the top-level recomp graph.
+ */
+static void *
+parse_toplevel_end(Symbol *sym)
+{
+    if (sym->expr &&
+        sym->expr->compile) {
+        /* Codegen pass for eg. multiple defs
+         */
+        if (compile_map_all(sym->expr->compile,
+            (map_compile_fn) compile_codegen, NULL)) {
+            printf("parse_toplevel_end: codegen failed!\n");
+            return sym;
+        }
+    }
+
+    /* Link all symbols.
+     */
+    compile_resolve_static(sym);
+
+    /* Now everything is linked, we can update the top-level
+     * parent/child graph.
+     */
+    symbol_made(sym);
+
+    return NULL;
+}
+
+static void *
+parse_tool_end(Tool *tool)
+{
+    if (tool->sym &&
+        parse_toplevel_end(tool->sym))
+        return tool;
+
+    return NULL;
+}
+
+/* Scan a toolkit and do any codegen.
+ */
+static void *
+parse_toolkit_end(Toolkit *kit)
+{
+    return toolkit_map(kit, (tool_map_fn) parse_tool_end, NULL, NULL);
 }
 
 /* Interface to parser.
@@ -1482,16 +1503,14 @@ parse_input(int ch, Symbol *sym, Toolkit *kit, int pos)
     }
     yyparse();
 
-    /* We may need to generate some code for eg multiple defs. We must codegen
-     * after parse and not during compile since codegen can add new
-     * dependencies and affect eval ordering.
+    /* Codegen and compile everything.
      */
     if (kit) {
-        if (compile_codegen_toolkit(kit))
+        if (parse_toolkit_end(kit))
             return FALSE;
     }
     else if (sym) {
-        if (compile_codegen_toplevel(sym))
+        if (parse_toplevel_end(sym))
             return FALSE;
     }
 
@@ -1559,11 +1578,6 @@ parse_rhs(Expr *expr, ParseRhsSyntax syntax)
     /* Resolve any dynamic refs.
      */
     expr_resolve(expr);
-
-    /* Compile.
-     */
-    if (compile_object(compile))
-        return FALSE;
 
     return TRUE;
 }

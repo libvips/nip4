@@ -121,7 +121,7 @@ rowview_tooltip(Rowview *rview)
 
 	char txt[1024];
 	VipsBuf buf = VIPS_BUF_STATIC(txt);
-	iobject_info(IOBJECT(row), &buf);
+	iobject_info(IOBJECT(row), &buf, 0);
 	vips_buf_removec(&buf, '\n');
 	gtk_widget_set_tooltip_text(rview->frame, vips_buf_all(&buf));
 }

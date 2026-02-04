@@ -3,6 +3,7 @@
 <component type="desktop-application">
   <id>org.libvips.nip4</id>
   <url type="homepage">https://github.com/jcupitt/nip4</url>
+  <url type="vcs-browser">https://github.com/jcupitt/nip4</url>
   <content_rating type="oars-1.1" />
 
   <name>nip4</name>
@@ -56,6 +57,20 @@
   </screenshots>
 
   <releases>
+
+    <release version="9.0.16" date="2026-02-01">
+      <description>
+        <p>
+
+          This build adds more improvements to nip4's programming language,
+          including pattern matching for lambdas and better scoping for list
+          comprehensions. Startup is faster thanks to deferred compilation,
+          and the flatpak binary bundles an ImageMagick binary for wider file
+          format support.
+
+        </p>
+      </description>
+    </release>
 
     <release version="9.0.15" date="2025-11-22">
       <description>

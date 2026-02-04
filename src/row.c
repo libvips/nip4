@@ -391,7 +391,6 @@ static void
 row_dispose(GObject *gobject)
 {
 	Row *row = ROW(gobject);
-	Column *col = row_get_column(row);
 
 #ifdef DEBUG_NEW
 	/* Can't use row_name_print(), we may not have a parent.
@@ -401,18 +400,6 @@ row_dispose(GObject *gobject)
 		printf(" (%s)", symbol_name(row->sym));
 	printf("\n");
 #endif /*DEBUG_NEW*/
-
-	/* Reset state. Also see row_parent_remove().
-	 */
-	if (row->expr)
-		expr_error_clear(row->expr);
-
-	row_hide_dependents(row);
-
-	if (col &&
-		col->last_select == row)
-		col->last_select = NULL;
-	row_deselect(row);
 
 	/* Break all recomp links.
 	 */
@@ -491,26 +478,28 @@ row_add_dirty_child_name(Link *link, VipsBuf *buf)
 }
 
 static void
-row_info(iObject *iobject, VipsBuf *buf)
+row_info(iObject *iobject, VipsBuf *buf, int indent)
 {
 	Row *row = ROW(iobject);
 
+	vips_buf_appendf(buf, "%*c", indent, ' ');
 	vips_buf_appends(buf, _("Name"));
 	vips_buf_appends(buf, ": ");
 	row_qualified_name(row, buf);
 	vips_buf_appends(buf, "\n");
 
 	if (row->expr)
-		iobject_info(IOBJECT(row->expr), buf);
+		iobject_info(IOBJECT(row->expr), buf, indent);
 	if (row->child_rhs &&
 		row->child_rhs->itext)
-		iobject_info(IOBJECT(row->child_rhs->itext), buf);
+		iobject_info(IOBJECT(row->child_rhs->itext), buf, indent);
 	if (row->child_rhs &&
 		row->child_rhs->graphic)
-		iobject_info(IOBJECT(row->child_rhs->graphic), buf);
+		iobject_info(IOBJECT(row->child_rhs->graphic), buf, indent);
 	if (row->top_row->sym) {
 		if (row->top_row->sym->topchildren) {
 			row_qualified_name(row, buf);
+			vips_buf_appendf(buf, "%*c", indent, ' ');
 			vips_buf_appends(buf, " ");
 			/* Expands to eg. "B1 refers to: B2, B3".
 			 */
@@ -522,6 +511,7 @@ row_info(iObject *iobject, VipsBuf *buf)
 		}
 		if (row->top_row->sym->topparents) {
 			row_qualified_name(row, buf);
+			vips_buf_appendf(buf, "%*c", indent, ' ');
 			vips_buf_appends(buf, " ");
 			/* Expands to eg. "B1 is referred to by: B2, B3".
 			 */
@@ -539,6 +529,7 @@ row_info(iObject *iobject, VipsBuf *buf)
 
 		if (sym->ndirtychildren) {
 			row_qualified_name(row, buf);
+			vips_buf_appendf(buf, "%*c", indent, ' ');
 			vips_buf_appends(buf, " ");
 			vips_buf_appends(buf, _("is blocked on"));
 			vips_buf_appends(buf, ": ");
@@ -624,16 +615,13 @@ row_parent_remove(iContainer *child)
 
 	/* Reset the parts of state which touch our parent.
 	 */
+	row_error_clear(row);
 	row_dirty_clear(row);
 	row_deselect(row);
 	workspace_queue_layout(row->ws);
 
 	row->ws = NULL;
 	row->top_row = NULL;
-
-	/* Don't clear error ... we may no longer have the link to expr. See
-	 * row_dispose() for that.
-	 */
 
 	ICONTAINER_CLASS(row_parent_class)->parent_remove(child);
 }
@@ -1481,51 +1469,44 @@ row_regenerate(Row *row)
 	Expr *expr = row->expr;
 	PElement base;
 
-	/* Regenerate any compiled code.
-	 */
 	if (expr->compile) {
 		PEPOINTE(&base, &expr->compile->base);
+		PElement *root = &expr->root;
 
-		if (!PEISNOVAL(&base)) {
-			PElement *root = &expr->root;
-
-			if (row == row->top_row) {
-				/* Recalcing base of tally display ... not a
-				 * class member, must be a sym with a value.
-				 */
-				gboolean res;
-
-				res = reduce_regenerate(expr, root);
-				expr_new_value(expr);
-
-				if (!res)
-					return FALSE;
-			}
-			else {
-				/* Recalcing a member somewhere inside ...
-				 * regen (member this) pair. Get the "this"
-				 * for the enclosing class instance ... the
-				 * top one won't always be right (eg. for
-				 * local classes); the enclosing one should
-				 * be the same as the most enclosing this.
-				 */
-				Subcolumn *scol = row_get_subcolumn(row);
-				Row *this = scol->this;
-				gboolean res;
-
-				res = reduce_regenerate_member(expr, &this->expr->root, root);
-				expr_new_value(expr);
-
-				if (!res)
-					return FALSE;
-			}
-
-			/* We may have made a new class instance ... all our
-			 * children need to update their heap pointers.
+		if (row == row->top_row) {
+			/* Recalcing base of tally display ... not a class member, must
+			 * be a sym with a value.
 			 */
-			if (heapmodel_new_heap(HEAPMODEL(row), root))
+			gboolean res;
+
+			res = reduce_regenerate(expr, root);
+			expr_new_value(expr);
+
+			if (!res)
 				return FALSE;
 		}
+		else {
+			/* Recalcing a member somewhere inside ...  regen (member this)
+			 * pair. Get the "this" for the enclosing class instance ... the
+			 * top one won't always be right (eg. for local classes); the
+			 * enclosing one should be the same as the most enclosing this.
+			 */
+			Subcolumn *scol = row_get_subcolumn(row);
+			Row *this = scol->this;
+			gboolean res;
+
+			res = reduce_regenerate_member(expr, &this->expr->root, root);
+			expr_new_value(expr);
+
+			if (!res)
+				return FALSE;
+		}
+
+		/* We may have made a new class instance ... all our
+		 * children need to update their heap pointers.
+		 */
+		if (heapmodel_new_heap(HEAPMODEL(row), root))
+			return FALSE;
 	}
 
 	return TRUE;
@@ -1554,7 +1535,8 @@ row_recomp_row(Row *row)
 
 	/* Parse and compile any changes to our text since we last came through.
 	 */
-	if (rhs && rhs->itext &&
+	if (rhs &&
+		rhs->itext &&
 		heapmodel_update_heap(HEAPMODEL(rhs->itext)))
 		return FALSE;
 

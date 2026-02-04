@@ -35,22 +35,22 @@ char *decode_SymbolType(SymbolType t);
 char *decode_SymbolType_user(SymbolType t);
 
 void *dump_tiny(Symbol *sym);
-void *dump_symbol(Symbol *sym);
-void dump_expr(Expr *expr);
-void dump_compile(Compile *compile);
+void *dump_symbol(Symbol *sym, int *indent);
+void dump_expr(Expr *expr, int *indent);
+void dump_compile(Compile *compile, int *indent);
 void dump_symbol_table(void);
-void *dump_kit(Toolkit *kit);
+void *dump_kit(Toolkit *kit, int *indent);
 Symbol *sym(char *name);
 void psym(char *name);
 void psymv(char *name);
 void pgraph(PElement *graph);
 
-void graph_heap(int nsp, HeapNode *hn);
+void graph_heap(HeapNode *hn, int indent);
 void graph_test(Heap *heap);
 
 void *dump_tree(ParseNode *n, int indent);
 
-void dump_links(Symbol *sym);
-void *dump_link(Link *link);
+void dump_links(Symbol *sym, int *indent);
+void *dump_link(Link *link, int *indent);
 
 void dump_symbol_heap(Symbol *sym);

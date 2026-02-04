@@ -1,3 +1,5 @@
+// test snip language features
+
 // all the image formats we test, and their matching number format
 // we can't use uchar as a number format directly since it'll become 'a' or
 // whatever and arithmetic ops will start failing
@@ -104,55 +106,63 @@ test_multidef = [
     test_multidef_list_pattern = sum [1..10] == 55;
 }
 
-tests = concat [
-    test_binary "add" add,
-    test_binary "subtract" subtract,
-    test_binary "multiply" multiply,
-    test_binary "divide" test_div,
-    test_unary "square" square,
-    test_unary "constant plus" (add 12),
-    test_unary "plus constant" (converse add 12),
-    test_unary "divided by constant" (converse test_div 3),
-    test_unary "multiply constant" (multiply 7),
-    test_unary "constant multiplied by" (converse multiply 7),
-    test_unary "constant subtracted from" (subtract 4),
-    test_unary "subtract constant" (converse subtract 4),
-    test_deconstruct,
-    test_multidef,
-    [
-        ["" ++ "a" == "a", "concat"],
-        [hd [1, error "nope"] == 1, "lazy hd"]
-    ]
+test_lcomp = [
+    [test_lconst, "list const in lcomp"],
+    [test_nested_lconst, "nested list const in lcomp"],
+    [test_nested_lcomp, "nested lcomp"],
+    [test_multiple_nested_lconst, "multiple nested list const in lcomp"],
+    [test_nested_filter_lcomp, "nested filtered lcomp"],
+    [test_multiple_filter_lcomp, "multiple filtered lcomp"]
 ]
 {
-    // libvips divide returns 0 for divide by zero
+    test_lconst = [[y] :: y <- [1..3]] == [[1], [2], [3]];
+    test_nested_lconst = [[[y]] :: y <- [1..3]] == [[[1]], [[2]], [[3]]];
+    test_nested_lcomp = [[[x, y] :: x <- [1..3]] :: y <- [1..3]] ==
+        [[[1, 1], [2, 1], [3, 1]],
+         [[1, 2], [2, 2], [3, 2]],
+         [[1, 3], [2, 3], [3, 3]]];
+    test_multiple_nested_lconst = [[[[x, y]]] :: y <- [1..3]; x <- [1..3]] ==
+        [[[[1, 1]]], [[[2, 1]]], [[[3, 1]]],
+         [[[1, 2]]], [[[2, 2]]], [[[3, 2]]],
+         [[[1, 3]]], [[[2, 3]]], [[[3, 3]]]];
+    test_nested_filter_lcomp =
+        [[[x, y] :: x <- [1..3]; x != y] :: y <- [1..3]] ==
+            [[[2, 1], [3, 1]],
+             [[1, 2], [3, 2]],
+             [[1, 3], [2, 3]]];
+    test_multiple_filter_lcomp =
+        [[x, y] :: x <- [1..3]; y <- [1..3]; x != y] ==
+            [[1, 2], [1, 3], [2, 1], [2, 3], [3, 1], [3, 2]];
+}
+
+test_concat = [
+    [hd [1, error "nope"] == 1, "lazy hd"]
+];
+
+main
+    = map unit_test [
+	    test_binary "add" add,
+	    test_binary "subtract" subtract,
+	    test_binary "multiply" multiply,
+	    test_binary "divide" test_div,
+	    test_unary "square" square,
+	    test_unary "constant plus" (add 12),
+	    test_unary "plus constant" (converse add 12),
+	    test_unary "divided by constant" (converse test_div 3),
+	    test_unary "multiply constant" (multiply 7),
+	    test_unary "constant multiplied by" (converse multiply 7),
+	    test_unary "constant subtracted from" (subtract 4),
+	    test_unary "subtract constant" (converse subtract 4),
+	    test_deconstruct,
+	    test_multidef,
+	    test_lcomp,
+        test_concat
+	]
+{
+    // libvips image divide sets 0 for divide by zero
     test_div a b
         = 0, is_real b && b == 0
         = 0, is_complex b && re b == 0 && im b == 0
         = divide a b;
 }
 
-main
-    = (map (const '.') pass) ++
-      "\n" ++
-      (join_sep "\n" (map print_fail fail))
-{
-    split fn l
-        = foldr split_item [[], []] l
-    {
-        split_item x sofar
-            = [pass', fail']
-        {
-            [pass, fail] = sofar;
-            pass'
-                = x : pass, fn x
-                = pass;
-            fail'
-                = x : fail, !fn x
-                = fail;
-        }
-    }
-
-    [pass, fail] = split (extract 0) tests;
-    print_fail x = "FAIL: " ++ x?1;
-}

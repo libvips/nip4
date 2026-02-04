@@ -698,7 +698,7 @@ regionview_hit(Regionview *regionview, int x, int y)
 		corner.height = 0;
 		vips_rect_marginadjust(&corner, margin);
 		if (vips_rect_includespoint(&corner, x, y))
-			return REGIONVIEW_RESIZE_TOPLEFT;
+			return REGIONVIEW_RESIZE_MOVE;
 
 		break;
 

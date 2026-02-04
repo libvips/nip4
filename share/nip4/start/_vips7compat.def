@@ -12,8 +12,7 @@ im_mask2vips = vips_image_from_matrix;
 im_vips2mask = vips_matrix_from_image;
 
 // vips7 wrappers
-im_black x y b = vips_black [$bands => b] x y;
-im_fgrey x y = vips_grey [] x y;
+
 
 im_rot90 x = vips_rot [] x "d90";
 im_rot180 x = vips_rot [] x "d180";
@@ -86,15 +85,15 @@ im_more_vec im vec = vips_relational_const [] im "more" vec;
 im_moreeq_vec im vec = vips_relational_const [] im "moreeq" vec;
 
 im_maxpos in =
-	(x, y)
+    (x, y)
 {
-	[value, x, y] = vips_max [$x => true, $y => true] in;
+    [value, x, y] = vips_max [$x => true, $y => true] in;
 }
 
 im_minpos in =
-	(x, y)
+    (x, y)
 {
-	[value, x, y] = vips_min [$x => true, $y => true] in;
+    [value, x, y] = vips_min [$x => true, $y => true] in;
 }
 
 
@@ -135,185 +134,220 @@ im_disp2Lab in disp = (im_XYZ2Lab @ im_sRGB2XYZ) in;
 im_disp2XYZ in disp = im_sRGB2XYZ in;
 
 im_icc_import x profile intent
-	= vips_icc_import [$intent => intent, $input_profile => profile] x;
+    = vips_icc_import [$intent => intent, $input_profile => profile] x;
 
 im_icc_import_embedded x intent
-	= vips_icc_import [$intent => intent, $embedded => true] x;
+    = vips_icc_import [$intent => intent, $embedded => true] x;
 
 im_icc_export_depth x depth profile intent
-	= vips_icc_export [
-		$depth => depth,
-		$intent => intent,
-		$output_profile => profile
-	] x;
+    = vips_icc_export [
+        $depth => depth,
+        $intent => intent,
+        $output_profile => profile
+    ] x;
 
 im_icc_transform x input_profile output_profile intent
-	= vips_icc_transform [
-		$intent => intent,
-		$input_profile => output_profile
-	] x output_profile;
-
-im_histnD x bins = vips_hist_find_ndim [$bins => bins] x;
-
-im_histplot in = vips_hist_plot [] in;
+    = vips_icc_transform [
+        $intent => intent,
+        $input_profile => output_profile
+    ] x output_profile;
 
 im_insertset main sub x y
-	= foldr add_another main (zip2 x y)
+    = foldr add_another main (zip2 x y)
 {
-	add_another pos im
-		= insert x y sub im
-	{
-		x = pos?0;
-		y = pos?1;
-	}
+    add_another pos im
+        = insert x y sub im
+    {
+        x = pos?0;
+        y = pos?1;
+    }
 }
 
 // use im_vips2mask, not to_matrix, since to_matrix does not preserve .scale
 im_gauss_dmask sigma min_amp
-	= im_vips2mask matrix
+    = im_vips2mask matrix
 {
-	matrix = vips_gaussmat [$precision => "float"] sigma min_amp;
+    matrix = vips_gaussmat [$precision => "float"] sigma min_amp;
 }
 
 im_gauss_imask sigma min_amp
-	= im_vips2mask matrix
+    = im_vips2mask matrix
 {
-	matrix = vips_gaussmat [$precision => "integer"] sigma min_amp;
+    matrix = vips_gaussmat [$precision => "integer"] sigma min_amp;
 }
 
 im_gauss_dmask_sep sigma min_amp
-	= im_vips2mask matrix
+    = im_vips2mask matrix
 {
-	matrix = vips_gaussmat [
-		$precision => "float",
-		$separable => true
-	] sigma min_amp;
+    matrix = vips_gaussmat [
+        $precision => "float",
+        $separable => true
+    ] sigma min_amp;
 }
 
 im_gauss_imask_sep sigma min_amp
-	= im_vips2mask matrix
+    = im_vips2mask matrix
 {
-	matrix = vips_gaussmat [
-		$precision => "integer",
-		$separable => true
-	] sigma min_amp;
+    matrix = vips_gaussmat [
+        $precision => "integer",
+        $separable => true
+    ] sigma min_amp;
 }
 
+im_gaussnoise xsize ysize mean sigma
+    = vips_gaussnoise [$mean => mean, $sigma => sigma] xsize ysize;
+
 im_read_dmask filename
-	= im_vips2mask matrix
+    = im_vips2mask matrix
 {
-        matrix = vips_matrixload [] filename;
+    matrix = vips_matrixload [] filename;
 }
 
 im_conv in matrix = vips_conv [$precision => "integer"] in matrix;
-im_conv_f in matrix = vips_conv [$precision => "float"] in matrix;
+im_convf in matrix = vips_conv [$precision => "float"] in matrix;
 im_convsep in matrix = vips_convsep [$precision => "integer"] in matrix;
 im_aconvsep in matrix = vips_convsep [$precision => "approximate"] in matrix;
-im_convsep_f in matrix = vips_convsep [$precision => "float"] in matrix;
+im_convsepf in matrix = vips_convsep [$precision => "float"] in matrix;
+
+im_conv_f = im_convf;
+im_convsep_f = im_convsepf;
+
+im__trim_raw width height image
+    = vips_crop [] image x y w h
+{
+    x = width / 2;
+    y = height / 2;
+    w = width;
+    h = height;
+}
+
+im__trim_raw_matrix matrix image
+    = im__trim_raw matrix.width matrix.height image;
+
+im_convsepf_raw in matrix
+    = im__trim_raw_matrix matrix (im_convsepf in matrix);
+im_convf_raw in matrix
+    = im__trim_raw_matrix matrix (im_convf in matrix);
+im_convsep_raw in matrix
+    = im__trim_raw_matrix matrix (im_convsep in matrix);
+im_conv_raw in matrix
+    = im__trim_raw_matrix matrix (im_conv in matrix);
 
 im_compass in matrix
-	= vips_compass [
-		$times => 8,
-		$angle => "d45",
-		$precision => "integer"
-	] in matrix;
+    = vips_compass [
+        $times => 8,
+        $angle => "d45",
+        $precision => "integer"
+    ] in matrix;
 
 im_lindetect in matrix
-	= vips_compass [
-		$times => 4,
-		$angle => "d45",
-		$precision => "integer"
-	] in matrix;
+    = vips_compass [
+        $times => 4,
+        $angle => "d45",
+        $precision => "integer"
+    ] in matrix;
 
 im_gradient in matrix
-	= vips_compass [
-		$times => 2,
-		$angle => "d90",
-		$combine => "sum",
-		$precision => "integer"
-	] in matrix;
+    = vips_compass [
+        $times => 2,
+        $angle => "d90",
+        $combine => "sum",
+        $precision => "integer"
+    ] in matrix;
 
 im_rotate_dmask45 matrix
-	= im_vips2mask matrix'
+    = im_vips2mask matrix'
 {
-	matrix' = vips_rot45 [] matrix;
+    matrix' = vips_rot45 [] matrix;
+}
+
+im_rotate_dmask90 matrix
+    = im_vips2mask matrix'
+{
+    matrix' = vips_rot [] matrix "d90";
 }
 
 im_log_dmask sigma min_amp
-	= im_vips2mask matrix
+    = im_vips2mask matrix
 {
-	matrix = vips_logmat [$precision => "float"] sigma min_amp;
+    matrix = vips_logmat [$precision => "float"] sigma min_amp;
 }
 
 im_log_imask sigma min_amp
-	= im_vips2mask matrix
+    = im_vips2mask matrix
 {
-	matrix = vips_logmat [$precision => "integer"] sigma min_amp;
+    matrix = vips_logmat [$precision => "integer"] sigma min_amp;
 }
 
 im_sharpen in mask_size x1 y2 y3 m1 m2
-	= vips_sharpen [
-		$sigma => mask_size / 4,
-		$x1 => x1,
-		$y2 => y2,
-		$y3 => y3,
-		$m1 => m1,
-		$m2 => m2
-	] in;
+    = vips_sharpen [
+        $sigma => mask_size / 4,
+        $x1 => x1,
+        $y2 => y2,
+        $y3 => y3,
+        $m1 => m1,
+        $m2 => m2
+    ] in;
 
 im_rank in xsize ysize n = vips_rank [] in xsize ysize n;
+im_rank_raw in xsize ysize n
+    = im__trim_raw xsize ysize (im_rank in xsize ysize n);
 im_rank_image in index = vips_bandrank [$index => index] in;
 
 im_dilate in mask = vips_morph [] in mask "dilate";
 im_erode in mask = vips_morph [] in mask "erode";
+im_dilate_raw in mask
+    = im__trim_raw_matrix mask (im_dilate in mask);
+im_erode_raw in mask
+    = im__trim_raw_matrix mask (im_erode in mask);
 
 im_flt_image_freq in type p1 p2 p3 p4 p5
-	= vips_freqmult [] in mask
+    = vips_freqmult [] in mask
 {
-	width = get_header "width" in;
-	height = get_header "height" in;
-	mask = im_create_fmask width height type p1 p2 p3 p4 p5;
+    width = get_header "width" in;
+    height = get_header "height" in;
+    mask = im_create_fmask width height type p1 p2 p3 p4 p5;
 }
 
 im_fractsurf size dimension = vips_fractsurf [] size size dimension;
 
 im_create_fmask width height type p1 p2 p3 p4 p5
-	= vips_mask_ideal [] width height p1, type == 0
-	= vips_mask_ideal [$reject => true] width height p1, type == 1
-	= vips_mask_butterworth [] width height p1 p2 p3, type == 2
-	= vips_mask_butterworth [$reject => true] width height p1 p2 p3, type == 3
-	= vips_mask_gaussian [] width height p1 p2, type == 4
-	= vips_mask_gaussian [$reject => true] width height p1 p2, type == 5
-	= vips_mask_ideal_ring [] width height p1 p2, type == 6
-	= vips_mask_ideal_ring [$reject => true] width height p1 p2, type == 7
-	= vips_mask_butterworth_ring [] width height p1 p2 p3 p4, type == 8
-	= vips_mask_butterworth_ring [$reject => true] width height p1 p2 p3 p4,
-		type == 9
-	= vips_mask_gaussian_ring [] width height p1 p2 p3, type == 10
-	= vips_mask_gaussian_ring [$reject => true] width height p1 p2 p3,
-		type == 11
-	= vips_mask_ideal_band [] width height p1 p2 p3, type == 12
-	= vips_mask_ideal_band [$reject => true] width height p1 p2 p3, type == 13
-	= vips_mask_butterworth_band [] width height p1 p2 p3 p4 p5, type == 14
-	= vips_mask_butterworth_band [$reject => true] width height p1 p2 p3 p4 p5,
-		 type == 15
-	= vips_mask_gaussian_band [] width height p1 p2 p3 p4, type == 16
-	= vips_mask_gaussian_band [$reject => true] width height p1 p2 p3 p4,
-		type == 17
-	= vips_mask_fractal [] width height p1, type == 18
-	= error "bad mask type";
+    = vips_mask_ideal [] width height p1, type == 0
+    = vips_mask_ideal [$reject => true] width height p1, type == 1
+    = vips_mask_butterworth [] width height p1 p2 p3, type == 2
+    = vips_mask_butterworth [$reject => true] width height p1 p2 p3, type == 3
+    = vips_mask_gaussian [] width height p1 p2, type == 4
+    = vips_mask_gaussian [$reject => true] width height p1 p2, type == 5
+    = vips_mask_ideal_ring [] width height p1 p2, type == 6
+    = vips_mask_ideal_ring [$reject => true] width height p1 p2, type == 7
+    = vips_mask_butterworth_ring [] width height p1 p2 p3 p4, type == 8
+    = vips_mask_butterworth_ring [$reject => true] width height p1 p2 p3 p4,
+        type == 9
+    = vips_mask_gaussian_ring [] width height p1 p2 p3, type == 10
+    = vips_mask_gaussian_ring [$reject => true] width height p1 p2 p3,
+        type == 11
+    = vips_mask_ideal_band [] width height p1 p2 p3, type == 12
+    = vips_mask_ideal_band [$reject => true] width height p1 p2 p3, type == 13
+    = vips_mask_butterworth_band [] width height p1 p2 p3 p4 p5, type == 14
+    = vips_mask_butterworth_band [$reject => true] width height p1 p2 p3 p4 p5,
+         type == 15
+    = vips_mask_gaussian_band [] width height p1 p2 p3 p4, type == 16
+    = vips_mask_gaussian_band [$reject => true] width height p1 p2 p3 p4,
+        type == 17
+    = vips_mask_fractal [] width height p1, type == 18
+    = error "bad mask type";
 
 im_rotquad in
-	= vips_wrap [$x => width / 2, $y => height / 2] in
+    = vips_wrap [$x => width / 2, $y => height / 2] in
 {
-	width = get_header "width" in;
-	height = get_header "height" in;
+    width = get_header "width" in;
+    height = get_header "height" in;
 }
 
 im_falsecolour in = vips_falsecolour [] in;
 
 im_stdif in a m0 b s0 xw yw
-	= vips_stdif [$s0 => s0, $b => b, $m0 => m0, $a => a] in xw yw;
+    = vips_stdif [$s0 => s0, $b => b, $m0 => m0, $a => a] in xw yw;
 
 im_stdif_raw = im_stdif;
 
@@ -322,21 +356,24 @@ im_float2rad in = vips_float2rad [] in;
 im_csv2vips filename = vips_csvload [] filename;
 
 im_binfile filename out width height bands offset
-	= vips_rawload [$offset => offset] filename out width height bands;
+    = vips_rawload [$offset => offset] filename out width height bands;
 
 im_video_v4l1 device channel brightness colour contrast hue ngrabs
-	= error "no v4l support";
+    = error "no v4l support";
 
 im_histgr in band_number = vips_hist_find [$band => band_number] in;
-im_histcum in = vips_hist_cum [] in;
-im_histnorm in = vips_hist_norm [] in;
+im_histcum = vips_hist_cum [];
+im_histnorm = vips_hist_norm [];
 im_histeq = im_histnorm @ im_histcum;
+im_lhisteq = vips_hist_local [];
+im_histnD x bins = vips_hist_find_ndim [$bins => bins] x;
+im_histplot = vips_hist_plot [];
 
 im_histspec in ref
-	= vips_hist_match [] in' ref'
+    = vips_hist_match [] a b
 {
-	in' = im_histeq in;
-	ref' = im_histeq ref;
+    a = im_histeq in;
+    b = im_histeq ref;
 }
 
 im_hist_indexed value index = vips_hist_find_indexed [] index value;
@@ -346,38 +383,45 @@ im_insert_noexpand in sub x y = vips_insert [] in sub x y;
 im_identity nbands = vips_identity [$bands => nbands];
 
 im_identity_ushort nbands size
-	= vips_identity [$bands => nbands, $ushort => true, $size => size];
+    = vips_identity [$bands => nbands, $ushort => true, $size => size];
 
 im_profile in direction
-	= im_clip2us columns, direction == 0
-	= im_clip2us rows
+    = im_clip2us columns, direction == 0
+    = im_clip2us rows
 {
-	[columns, rows] = vips_profile [] in;
+    [columns, rows] = vips_profile [] in;
 }
 
 im_blend cond in1 in2 = vips_ifthenelse [$blend => true] cond in1 in2;
 
 im_text text font width alignment dpi
-	= vips_text [
-		$font => font,
-		$width => width,
-		$align => alignment,
-		$dpi => dpi
-	] text;
+    = vips_text [
+        $font => font,
+        $width => width,
+        $align => alignment,
+        $dpi => dpi
+    ] text;
 
+im_black x y b = vips_black [$bands => b] x y;
+
+im_fgrey x y = vips_grey [] x y;
 im_grey xsize ysize = vips_grey [$uchar => true] xsize ysize;
 
 im_eye xsize ysize factor
-	= vips_eye [$factor => factor, $uchar => true] xsize ysize;
+    = vips_eye [$factor => factor, $uchar => true] xsize ysize;
 
 im_zone size = vips_zone [$uchar => true] size size;
 
 im_extract_bands input band nbands
-	= vips_extract_band [$n => nbands] input band;
+    = vips_extract_band [$n => nbands] input band;
 
 im_maplut in lut = vips_maplut [] in lut;
 
 im_invertlut measures lut_size = vips_invertlut [$size => lut_size] measures;
+
+im_measure in x y w h h_patches v_patches
+    = vips_measure [$left => x, $top => y, $width => w, $height => h]
+        in h_patches v_patches;
 
 im_make_xy xsize ysize = vips_xyz [] xsize ysize;
 im_fwfft in = vips_fwfft [] in;
@@ -387,28 +431,43 @@ im_c2rect in = vips_complex [] in "rect";
 im_buildlut mask = vips_buildlut [] mask;
 
 im_tone_build_range in_max out_max Lb Lw Ps Pm Ph S M H
-	= vips_tonelut [
-		$in_max => in_max,
-		$out_max => out_max,
-		$Lb => Lb,
-		$Lw => Lw,
-		$Ps => Ps,
-		$Pm => Pm,
-		$Ph => Ph,
-		$S => S,
-		$M => M,
-		$H => H
-	];
+    = vips_tonelut [
+        $in_max => in_max,
+        $out_max => out_max,
+        $Lb => Lb,
+        $Lw => Lw,
+        $Ps => Ps,
+        $Pm => Pm,
+        $Ph => Ph,
+        $S => S,
+        $M => M,
+        $H => H
+    ];
+
+im_tone_build Lb Lw Ps Pm Ph S M H
+    = im_clip2s (im_tone_build_range 32767 32767 Lb Lw Ps Pm Ph S M H);
 
 // not useful and not in vips8
 im_tone_analyse in Ps Pm Ph S M H
-	= error "not implemented";
+    = error "not implemented";
 im_tone_map in lut
-	= error "not implemented";
+    = error "not implemented";
 im_zerox in flag
-	= error "not implemented";
+    = error "not implemented";
 im_icc_ac2rc in profile
-	= error "not implemented";
+    = error "not implemented";
+im_transform_search sample reference max_error max_iterations order ipol wrap
+    = error "not implemented";
+im_greyc_mask src mask iterations amplitude sharpness anisotropy alpha sigma dl da gauss_prec interpolation fast_approx
+    = error "not implemented";
+im_greyc src iterations amplitude sharpness anisotropy alpha sigma dl da gauss_prec interpolation fast_approx
+    = error "not implemented";
+im_estpar src par order ipol wrap displ
+    = error "not implemented";
+im_resize_linear in X Y
+    = error "not implemented";
+im_lab_morph in greyscale L_offset L_scale a_scale b_scale
+    = error "not implemented";
 
 im_cntlines in dir = vips_countlines [] in dir;
 
@@ -417,115 +476,128 @@ im_fliphor in = vips_flip [] in "horizontal";
 im_gbandjoin in = vips_bandjoin [] in;
 
 im_affinei_all in interpolate a b c d dx dy
-	= vips_affine [
-		$interpolate => interpolate,
-		$idx => dx,
-		$idy => dy
-	] in [a, b, c, d];
+    = vips_affine [
+        $interpolate => interpolate,
+        $idx => dx,
+        $idy => dy
+    ] in [a, b, c, d];
+
+im_affine in a b c d dx dy x y w h
+    = vips_affine [
+        $idx => dx,
+        $idy => dy,
+        $oarea => [x, y, w, h]
+    ] in [a, b, c, d];
+
+im_similarity in out a b dx dy
+    = vips_affine [
+        $idx => dx,
+        $idy => dy
+    ] in [a, -b, b, a];
 
 im_zoom in x y = vips_zoom [] in x y;
 
 im_project in = vips_project [] in;
 
 im_match_linear ref sec xref1 yref1 xsec1 ysec1 xref2 yref2 xsec2 ysec2
-	= vips_match [] ref sec xref1 yref1 xsec1 ysec1 xref2 yref2 xsec2 ysec2;
+    = vips_match [] ref sec xref1 yref1 xsec1 ysec1 xref2 yref2 xsec2 ysec2;
 
 im_match_linear_search ref sec
-	xref1 yref1 xsec1 ysec1
-	xref2 yref2 xsec2 ysec2
-	hwindowsize hsearchsize
-	= vips_match [
-		$hwindow => hwindowsize,
-		$harea => hsearchsize,
-		$search => true
-	] ref sec xref1 yref1 xsec1 ysec1 xref2 yref2 xsec2 ysec2;
+    xref1 yref1 xsec1 ysec1
+    xref2 yref2 xsec2 ysec2
+    hwindowsize hsearchsize
+    = vips_match [
+        $hwindow => hwindowsize,
+        $harea => hsearchsize,
+        $search => true
+    ] ref sec xref1 yref1 xsec1 ysec1 xref2 yref2 xsec2 ysec2;
 
 im_lrmerge ref sec dx dy mwidth
-	= vips_merge [$mblend => mwidth] ref sec "horizontal" dx dy;
+    = vips_merge [$mblend => mwidth] ref sec "horizontal" dx dy;
 
 im_tbmerge ref sec dx dy mwidth
-	= vips_merge [$mblend => mwidth] ref sec "vertical" dx dy;
+    = vips_merge [$mblend => mwidth] ref sec "vertical" dx dy;
 
 im_lrmosaic ref sec bandno xr yr xs ys
-	halfcorrelation halfarea balancetype mwidth
-	= vips_mosaic [
-		$hwindow => halfcorrelation,
-		$harea => halfarea,
-		$mblend => mwidth
-	] ref sec "horizontal" xr yr xs ys;
+    halfcorrelation halfarea balancetype mwidth
+    = vips_mosaic [
+        $hwindow => halfcorrelation,
+        $harea => halfarea,
+        $mblend => mwidth
+    ] ref sec "horizontal" xr yr xs ys;
 
 im_tbmosaic ref sec bandno xr yr xs ys
-	halfcorrelation halfarea balancetype mwidth
-	= vips_mosaic [
-		$hwindow => halfcorrelation,
-		$harea => halfarea,
-		$mblend => mwidth
-	] ref sec "vertical" xr yr xs ys;
+    halfcorrelation halfarea balancetype mwidth
+    = vips_mosaic [
+        $hwindow => halfcorrelation,
+        $harea => halfarea,
+        $mblend => mwidth
+    ] ref sec "vertical" xr yr xs ys;
 
 im_lrmosaic1 ref sec bandno
-	xr1 yr1 xs1 ys1
-	xr2 yr2 xs2 ys2
-	halfcorrelation halfarea balancetype mwidth
-	= vips_mosaic1 [
-		$hwindow => halfcorrelation,
-		$harea => halfarea,
-		$mblend => mwidth
-	] ref sec "horizontal" xr1 yr1 xs1 ys1 xr2 yr2 xs2 ys2;
+    xr1 yr1 xs1 ys1
+    xr2 yr2 xs2 ys2
+    halfcorrelation halfarea balancetype mwidth
+    = vips_mosaic1 [
+        $hwindow => halfcorrelation,
+        $harea => halfarea,
+        $mblend => mwidth
+    ] ref sec "horizontal" xr1 yr1 xs1 ys1 xr2 yr2 xs2 ys2;
 
 im_tbmosaic1 ref sec bandno
-	xr1 yr1 xs1 ys1
-	xr2 yr2 xs2 ys2
-	halfcorrelation halfarea balancetype mwidth
-	= vips_mosaic1 [
-		$hwindow => halfcorrelation,
-		$harea => halfarea,
-		$mblend => mwidth
-	] ref sec "vertical" xr1 yr1 xs1 ys1 xr2 yr2 xs2 ys2;
+    xr1 yr1 xs1 ys1
+    xr2 yr2 xs2 ys2
+    halfcorrelation halfarea balancetype mwidth
+    = vips_mosaic1 [
+        $hwindow => halfcorrelation,
+        $harea => halfarea,
+        $mblend => mwidth
+    ] ref sec "vertical" xr1 yr1 xs1 ys1 xr2 yr2 xs2 ys2;
 
 im_lrmerge1 ref sec
-	xr1 yr1 xs1 ys1
-	xr2 yr2 xs2 ys2
-	mwidth
-	= vips_mosaic1 [$mblend => mwidth]
-		ref sec "horizontal" xr1 yr1 xs1 ys1 xr2 yr2 xs2 ys2;
+    xr1 yr1 xs1 ys1
+    xr2 yr2 xs2 ys2
+    mwidth
+    = vips_mosaic1 [$mblend => mwidth]
+        ref sec "horizontal" xr1 yr1 xs1 ys1 xr2 yr2 xs2 ys2;
 
 im_tbmerge1 ref sec
-	xr1 yr1 xs1 ys1
-	xr2 yr2 xs2 ys2
-	mwidth
-	= vips_mosaic1 [$mblend => mwidth]
-		ref sec "vertical" xr1 yr1 xs1 ys1 xr2 yr2 xs2 ys2;
+    xr1 yr1 xs1 ys1
+    xr2 yr2 xs2 ys2
+    mwidth
+    = vips_mosaic1 [$mblend => mwidth]
+        ref sec "vertical" xr1 yr1 xs1 ys1 xr2 yr2 xs2 ys2;
 
 im_global_balancef in gamma = vips_globalbalance [$gamma => gamma] in;
 
 im_global_balance in gamma
-	= vips_globalbalance [$gamma => gamma, $int_output => true] in;
+    = vips_globalbalance [$gamma => gamma, $int_output => true] in;
 
 im_remosaic in old_str new_str = vips_remosaic [] in old_str new_str;
 
 im_system_image in in_format out_format command
-	= vips_system [
-		$in => [in],
-		$out => true,
-		$in_format => in_format,
-		$out_format => out_format,
-		$log => true
-	] command;
+    = vips_system [
+        $in => [in],
+        $out => true,
+        $in_format => in_format,
+        $out_format => out_format,
+        $log => true
+    ] command;
 
 im_grid input tile_height across down
-	= vips_grid [] input tile_height across down;
+    = vips_grid [] input tile_height across down;
 
 im_copy in = vips_copy [] in;
 im_cache in tile_width tile_height max_tiles
-	= vips_tilecache [
-		$tile_width => tile_width,
-		$tile_height => tile_height,
-		$max_tiles => max_tiles,
-		$threaded => true
-	] in;
+    = vips_tilecache [
+        $tile_width => tile_width,
+        $tile_height => tile_height,
+        $max_tiles => max_tiles,
+        $threaded => true
+    ] in;
 
 im_flood_blob_copy in start_x start_y ink
-	= vips_draw_flood [$equal => true] in ink start_x start_y;
+    = vips_draw_flood [$equal => true] in ink start_x start_y;
 im_draw_flood_blob = im_flood_blob_copy;
 
 im_draw_flood in start_x start_y ink
@@ -543,4 +615,3 @@ im_draw_circle image cx cy radius fill ink
 im_segment test = vips_labelregions [$segments => true] test;
 
 im_transform in params ipol wrap = vips_quadratic [] in params;
-

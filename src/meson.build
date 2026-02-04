@@ -208,8 +208,8 @@ nip4 = executable('nip4',
   install: true,
 )
 
-nip4_batch = executable('nip4-batch',
-  'main-batch.c',
+nip4_snip = executable('snip',
+  'main-snip.c',
   dependencies: nip4_dep,
   win_subsystem: 'console',
   install: true,
