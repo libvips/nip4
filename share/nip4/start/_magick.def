@@ -87,7 +87,7 @@ Magick = class {
 
 	// make a command-line ... args is a [str] we join with spaces
 	command args
-		= "'" ++ command_path ++ "' " ++ join_sep " " args'
+		= "'" ++ command_path ++ "' " ++ joinsep " " args'
 	{
 		args'
 			= ["convert"] ++ args, use_gm
@@ -1097,7 +1097,7 @@ Magick = class {
 			"UltraExpanded"
 		] "Normal";
 
-		_flag = join_sep " " [
+		_flag = joinsep " " [
 				"-family", family.item,
 				"-weight", print weight.value,
 				"-pointsize", print size.value,

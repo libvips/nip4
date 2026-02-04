@@ -944,7 +944,7 @@ blend cond in1 in2
     = vips_ifthenelse [$blend => true] (get_image cond) (get_image in1) (get_image in2),
         has_image cond && has_image in1 && has_image in2
     = error (_ "bad arguments to " ++ "blend" ++ ": " ++
-        join_sep ", " (map print [cond, in1, in2]))
+        joinsep ", " (map print [cond, in1, in2]))
 {
     blend_op = Operator "blend"
         blend_obj Operator_type.COMPOUND_REWRAP false;
@@ -2549,7 +2549,7 @@ sdf options width height shape
 unit_test test_list
     = (map (const '.') pass) ++
       "\n" ++
-      (join_sep "\n" (map print_fail fail))
+      (joinsep "\n" (map print_fail fail))
 {
     split fn l
         = foldr split_item [[], []] l

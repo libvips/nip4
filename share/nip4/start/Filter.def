@@ -1678,7 +1678,7 @@ Autotrace_item = class
 		scale = Scale "SVG scale" 0.1 10 1;
 
 		command
-			= "autotrace '%s' " ++ join_sep " "
+			= "autotrace '%s' " ++ joinsep " "
 				[ofmt, ofile, desp, lint, cent]
 		{
 			prog = search_for_error "autotrace";
