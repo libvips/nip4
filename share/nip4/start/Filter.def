@@ -958,8 +958,8 @@ Filter_blend_item = class
 						// prefer uchar as the condition
 						= false,
 							has_format a && has_format b &&
-							get_format a > Image_format.UCHAR &&
-								get_format b == Image_format.UCHAR
+							get_format a > Format.UCHAR &&
+								get_format b == Format.UCHAR
 						= true;
 					[condition, in1, in2] = sortc compare [a, b, c];
 				}
@@ -1439,13 +1439,12 @@ Filter_solarize_item = class
 				= hist_map tab'''' image
 			{
 				// max pixel value for this format
-				mx = Image_format.maxval image.format;
+				mx = Format.maxval image.format;
 
 				// make a LUT ... just 8 and 16 bit
 				tab
 					= im_identity_ushort image.bands mx,
-						image.format ==
-							Image_format.USHORT
+						image.format == Format.USHORT
 					= im_identity image.bands;
 				tab' = Image tab;
 

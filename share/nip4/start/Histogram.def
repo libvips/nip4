@@ -39,7 +39,7 @@ Hist_new_item = class
 			_result
 				= tone_build fmt b w sp mp hp sa ma ha
 			{
-				fmt = [Image_format.UCHAR, Image_format.USHORT]?d;
+				fmt = [Format.UCHAR, Format.USHORT]?d;
 			}
 		}
 	}
@@ -96,7 +96,7 @@ Hist_find_item = class
 
 					is_index x
 						= has_image x && b == 1 &&
-							(f == Image_format.UCHAR || f == Image_format.USHORT)
+							(f == Format.UCHAR || f == Format.USHORT)
 					{
 						im = get_image x;
 						b = get_bands x;

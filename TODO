@@ -1,5 +1,3 @@
-- _stdenv next, then _Object
-
 - try
 
     cd x/y/z
@@ -8,12 +6,6 @@
     save dialog defaults to Home, should be x/y/z
 
 # menu redesign
-
-- use new language features
-
-	_list.def		done
-	_predicate.def		done
-	_stdenv.def
 
 - add #include to snip? probably necessary if we want to use it as a
   scripting language
@@ -67,7 +59,7 @@
 - in order, rework:
 
     _list.def      	    done
-    _predicate.def      done
+    _predicate.def     	done
     _stdenv.def     	done
     _Object.def
     _types.def

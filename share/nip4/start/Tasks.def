@@ -62,7 +62,7 @@ Tasks_capture_item = class
 						= x : l;
 				}
 
-				blank = image_new [$format => Image_format.DOUBLE] 1 1;
+				blank = image_new [$format => Format.DOUBLE] 1 1;
 			}
 		}
 	}
@@ -84,7 +84,7 @@ Tasks_capture_item = class
 				= Image (im_binfile path.value
 					across.expr down.expr bytes.expr skip.expr)
 			{
-				blank = image_new [$format => Image_format.DOUBLE] 1 1;
+				blank = image_new [$format => Format.DOUBLE] 1 1;
 			}
 		}
 	}
@@ -300,7 +300,7 @@ Tasks_capture_item = class
 			] 0;
 
 			// get max of input image
-			_max_value = Image_format.maxval image.format;
+			_max_value = Format.maxval image.format;
 
 			// measure chart image
 			_camera = measure_sample 6 4 (to_real measure) image;
@@ -899,7 +899,7 @@ Manual_balance_item = class
                 // Used to select the area to be replaced.
                 sc = Scale "Scale cutoff" 0.01 mx (mx / 2)
                 {
-                    mx = Image_format.maxval im1.format;
+                    mx = Format.maxval im1.format;
                 }
 
                 // Allows replacement with scale&offset balanced gaussian noise.

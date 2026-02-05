@@ -571,7 +571,7 @@ Image_new_item = class Menupullright "_New" "make new things" {
 				{
 
 					black = image_new [
-						$format => Image_format.FLOAT
+						$format => Format.FLOAT
                     ] (to_real psize) (to_real psize);
 					notblack = black + brightness;
 
@@ -595,7 +595,7 @@ Image_new_item = class Menupullright "_New" "make new things" {
 
 				_result
 					= Image (set_header $interpretation $b_w
-						(cast Image_format.UCHAR wedge))
+						(cast Format.UCHAR wedge))
 				{
 					wedge
 						= 255 / (to_real npatches - 1) *
@@ -1063,7 +1063,7 @@ Image_levels_item = class
 				= Expression "Image maximum" mx
 			{
 				mx
-						= Image_format.maxval x.format, has_format x
+						= Format.maxval x.format, has_format x
 						= 255;
 			}
 
@@ -1228,7 +1228,7 @@ Image_transform_item = class
 
 				xfactor = Expression "Horizontal scale factor" 1;
 				yfactor = Expression "Vertical scale factor" 1;
-				kernel = Kernel_picker Kernel_type.LINEAR;
+				kernel = Kernel_picker Kernel.LINEAR;
 
 				_result
 					= map_unary process x
@@ -1253,7 +1253,7 @@ Image_transform_item = class
 				] 0;
 				size = Expression "Resize to (pixels)" 128;
 				aspect = Toggle "Break aspect ratio" false;
-				kernel = Kernel_picker Kernel_type.LINEAR;
+				kernel = Kernel_picker Kernel.LINEAR;
 
 				_result
 					= map_unary process x
@@ -1305,7 +1305,7 @@ Image_transform_item = class
 			    size = Option "Page size" [
 					"Full page", "Half page", "Quarter page"
 				] 0;
-				kernel = Kernel_picker Kernel_type.LINEAR;
+				kernel = Kernel_picker Kernel.LINEAR;
 
 			 	_result
 				 	= map_unary process x
@@ -1372,7 +1372,7 @@ Image_transform_item = class
 							= 3, coding == Image_coding.LABPACK
 							= image.bands;
 						format
-							= Image_format.FLOAT, coding == Image_coding.LABPACK
+							= Format.FLOAT, coding == Image_coding.LABPACK
 							= image.format;
 						type = image.type;
 
@@ -1429,8 +1429,7 @@ Image_transform_item = class
 						= has_bands x && get_bands x == 1 &&
 							has_format x && is_complex_format (get_format x);
 					is_complex_format f
-						= f == Image_format.COMPLEX ||
-							f == Image_format.DPCOMPLEX;
+						= f == Format.COMPLEX || f == Format.DPCOMPLEX;
 				}
 			}
 		}

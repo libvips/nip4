@@ -11,7 +11,7 @@ image_new options w h
     = embed 1 0 0 w h image'''
 {
     defaults = get_option options [
-        $format => Image_format.UCHAR,
+        $format => Format.UCHAR,
         $bands => 1,
         $coding => Image_coding.NOCODING,
         $interpretation => Image_interpretation.B_W,
@@ -24,7 +24,7 @@ image_new options w h
 
     coding = defaults $coding;
     format
-        = Image_format.FLOAT, coding == Image_coding.LABPACK
+        = Format.FLOAT, coding == Image_coding.LABPACK
         = defaults $format;
     bands
         = 3, coding == Image_coding.LABPACK
@@ -75,7 +75,7 @@ lab_slice size l
     = set_header $interpretation $lab im
 {
     L = image_new [
-        $format => Image_format.FLOAT,
+        $format => Format.FLOAT,
         $interpretation => Image_type.B_W,
         $pixel => l
     ] size size;

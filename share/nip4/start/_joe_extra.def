@@ -326,7 +326,7 @@ Select_item = class
 				= Scale "Threshold" 0 mx (mx / 2)
 			{
 				mx
-					= Image_format.maxval x.format, is_Image x
+					= Format.maxval x.format, is_Image x
 					= 255;
 			}
 

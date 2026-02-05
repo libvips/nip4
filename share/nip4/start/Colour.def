@@ -657,7 +657,7 @@ Colour_matrix_to_chart_item = class
 				// we don't know the format .. use sRGB (well, why not?)
 				patch v = image_new [
                     $bands => len v,
-                    $format => Image_format.FLOAT,
+                    $format => Format.FLOAT,
                     $pixel => v
                 ] (to_real pwidth) (to_real pheight);
 
