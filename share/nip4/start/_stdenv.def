@@ -2519,7 +2519,6 @@ linearu a b x
 sdf options width height shape
     = vips_sdf options (to_real width) (to_real height) shape;
 
-
 /* simple unit tester ... use with eg.
  *
  * main = unit_test [
