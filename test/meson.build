@@ -33,6 +33,8 @@ demos = [
 # scripting language tests
 snip_tests = [
   'test_snip.def',
+  'test_list.def',
+  'test_predicate.def',
 ]
 
 foreach name : should_pass_tests

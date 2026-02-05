@@ -1,3 +1,5 @@
+#!/usr/bin/env snip
+
 // test the _list lib functions
 
 main = unit_test [

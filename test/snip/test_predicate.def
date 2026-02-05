@@ -1,0 +1,51 @@
+#!/usr/bin/env snip
+
+// test the _list lib functions
+
+sample_image = Image_file "../images/slanted_oval_vase2.jpg";
+
+main = unit_test [
+    [is_colour_space "sRGB", "is_colour_space"],
+    [!is_colour_space "banana", "not is_colour_space"],
+    [is_colour_type (Interpretation.get_value "sRGB"), "is_colour_type"],
+    [is_prefix "hell" "hello world!", "is_prefix"],
+    [is_suffix "ld!" "hello world!", "is_suffix"],
+    [is_substr "llo" "hello world!", "is_substr"],
+    [is_string "hello world!", "is_string"],
+    [is_real_list [1, 2, 3], "is_real_list"],
+    [!is_real_list [1, (1, 2), 3], "not is_real_list"],
+
+    [is_list_len 2 [1, 2], "is_list_len"],
+    [!is_list_len 2 [1, 2, 3], "not is_list_len longer"],
+    [!is_list_len 2 [1], "not is_list_len shorter"],
+    [is_list_len_more 2 [1, 2, 3], "is_list_len_more"],
+    [!is_list_len_more 2 [1, 2], "not is_list_len_more"],
+    [!is_list_len_more 2 [1], "not is_list_len_more shorter"],
+    [is_list_len_moreeq 2 [1, 2, 3], "is_list_len_moreeq"],
+    [is_list_len_moreeq 2 [1, 2], "is_list_len_moreeq equal"],
+    [!is_list_len_moreeq 2 [1], "is_list_len_moreeq shorter"],
+
+    [is_rectangular [1], "is_rectangular"],
+    [is_rectangular [[[1]]], "is_rectangular 2"],
+    [is_rectangular [[[1, 2]]], "is_rectangular 3"],
+    [is_rectangular "hello", "is_rectangular 4"],
+    [!is_rectangular [[1, 2], [3]], "not is_rectangular"],
+    [is_matrix [[1, 2], [3, 4]], "is_matrix"],
+    [is_matrix [[1]], "is_matrix 2"],
+    [is_matrix [[1, 2]], "is_matrix 3"],
+    [!is_matrix [1, 2], "not is_matrix"],
+    [!is_matrix [[1, 2], [4]], "not is_matrix 2"],
+    [is_square_matrix [[1, 2], [3, 4]], "is_square_matrix"],
+    [!is_square_matrix [[1, 2]], "not is_square_matrix"],
+    [is_odd_matrix [[1, 2, 3], [4, 5, 6], [7, 8, 9]], "is_odd_matrix"],
+    [!is_odd_matrix [[1, 2]], "not is_odd_matrix"],
+    [is_xy_list [[1, 2], [3, 4]], "is_xy_list"],
+
+    [has_interpretation sample_image, "has_interpretation"],
+    [get_interpretation sample_image == Interpretation.get_value "sRGB",
+	"get_interpretation"],
+
+    [get_header "xoffset" (set_header "xoffset" 12 sample_image) == 12,
+        "set_header"]
+];
+

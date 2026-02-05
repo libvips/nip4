@@ -1,10 +1,10 @@
-/* is_colour_space str: is a string one of nip's colour space names
+/* is_colour_space str: is a string one of nip's colorimetric spaces
  */
-is_colour_space str = Image_interpretation.colour_spaces.present 0 str;
+is_colour_space str = Interpretation_allowed.has_key str;
 
-/* is_colour_type n: is a number one of VIPS's colour spaces
+/* is_colour_type n: is a number one of nip's colorimetric numbers
  */
-is_colour_type n = Image_interpretation.colour_spaces.present 1 n;
+is_colour_type n = Interpretation_allowed.has_value n;
 
 /* is_number: is a real or a complex number.
  */
@@ -38,24 +38,24 @@ is_letter c = ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
 
 /* is_digit c: true if character c is an ASCII digit
  *
- * is_digit :: char->bool
+ * is_digit :: char -> bool
  */
 is_digit x = '0' <= x && x <= '9';
 
 /* A whitespace character.
  *
- * is_space :: char->bool
+ * is_space :: char -> bool
  */
 is_space = member " \n\t";
 
-/* List str starts with section prefix.
+/* List str starts with a prefix.
  *
  * is_prefix "hell" "hello world!" == true
  * is_prefix :: [*] -> [*] -> bool
  */
 is_prefix prefix str = take (len prefix) str == prefix;
 
-/* List str ends with section suffix.
+/* List str ends with a suffix.
  *
  * is_suffix "ld!" "hello world!" == true
  * is_suffix :: [*] -> [*] -> bool
@@ -90,6 +90,7 @@ is_string_list l = is_listof is_string l;
  * (or infinite) lists, since it won't eval the whole of l.
  */
 is_list_len 0 [] = true;
+is_list_len 0 l = false;
 is_list_len n [] = false;
 is_list_len n a:x = is_list_len (n - 1) x;
 
@@ -97,11 +98,14 @@ is_list_len n a:x = is_list_len (n - 1) x;
  */
 is_list_len_more 0 [] = false;
 is_list_len_more 0 l = true;
+is_list_len_more n [] = false;
 is_list_len_more n a:x = is_list_len_more (n - 1) x;
 
 /* Test length is more than or equal to n.
  */
+is_list_len_moreeq 0 [] = true;
 is_list_len_moreeq 0 l = true;
+is_list_len_moreeq n [] = false;
 is_list_len_moreeq n a:x = is_list_len_moreeq (n - 1) x;
 
 /* is_rectangular l: is l a rectangular data structure
