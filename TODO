@@ -7,17 +7,12 @@
 
 # menu redesign
 
-- test "index" .. local multidef
-
-	add to test_snip?
-
-- add test_list to check list processing defs
-
 - use new language features
 
-	_list.def
-	_predicate.def
+	_list.def		done
+	_predicate.def		done
 	_stdenv.def
+
 - add #include to snip? probably necessary if we want to use it as a
   scripting language
 

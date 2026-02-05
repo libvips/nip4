@@ -1,4 +1,3 @@
-
 /* is_colour_space str: is a string one of nip's colour space names
  */
 is_colour_space str = Image_interpretation.colour_spaces.present 0 str;
@@ -87,38 +86,38 @@ is_real_list l = is_listof is_real l;
  */
 is_string_list l = is_listof is_string l;
 
-/* Test list length ... quicker than len x == n for large (or infinite) lists,
- * since it won't eval the whole of x.
+/* Test list length is exactly n ... quicker than len l == n for large
+ * (or infinite) lists, since it won't eval the whole of l.
  */
-is_list_len n x
-	= true, x == [] && n == 0
-	= false, x == [] || n == 0
-	= is_list_len (n - 1) (tl x);
+is_list_len 0 [] = true;
+is_list_len n [] = false;
+is_list_len n a:x = is_list_len (n - 1) x;
 
-is_list_len_more n x
-	= true, x != [] && n == 0
-	= false, x == [] || n == 0
-	= is_list_len_more (n - 1) (tl x);
+/* Test length is strictly more than n.
+ */
+is_list_len_more 0 [] = false;
+is_list_len_more 0 l = true;
+is_list_len_more n a:x = is_list_len_more (n - 1) x;
 
-is_list_len_moreeq n x
-	= true, n == 0
-	= false, x == []
-	= is_list_len_moreeq (n - 1) (tl x);
+/* Test length is more than or equal to n.
+ */
+is_list_len_moreeq 0 l = true;
+is_list_len_moreeq n a:x = is_list_len_moreeq (n - 1) x;
 
 /* is_rectangular l: is l a rectangular data structure
  */
 is_rectangular l
-	= true, !is_list l
-	= true, all (map is_obj l)
-	= true, all (map is_list l) &&
-		all (map (not @ is_obj) l) &&
-		all (map is_rectangular l) &&
-		is_list_len_more 0 l &&
-		all (map (is_list_len (len (hd l))) (tl l))
-	= false
+    = true, !is_list l
+    = true, all (map is_obj l)
+    = true, all (map is_list l) &&
+        all (map (not @ is_obj) l) &&
+        all (map is_rectangular l) &&
+        is_list_len_more 0 l &&
+        all (map (is_list_len (len (hd l))) (tl l))
+    = false
 {
-	// treat strings as a base type, not [char]
-	is_obj x = !is_list x || is_string x;
+    // treat strings as a base type, not [char]
+    is_obj x = !is_list x || is_string x;
 }
 
 /* is_matrix l: is l a list of lists of real numbers, all the same length
@@ -194,16 +193,16 @@ is_String x = is_instanceof "String" x;
 /* A list of the form [[1, 2], [3, 4], [5, 6] ...]
  */
 is_xy_list l
-	= is_list l && all (map xy l)
+    = is_list l && all (map xy l)
 {
-	xy l = is_real_list l && is_list_len 2 l;
+    xy l = is_real_list l && is_list_len 2 l;
 }
 
 // does a nested list structure contain a Group object?
 contains_Group l
-	= true, is_list l && any (map is_Group l)
-	= any (map contains_Group l), is_list l
-	= false;
+    = true, is_list l && any (map is_Group l)
+    = any (map contains_Group l), is_list l
+    = false;
 
 /* Does an object have a libvips interpretation?
  */
@@ -212,59 +211,57 @@ has_interpretation x = is_image x || is_Image x || is_Arrow x || is_Colour x;
 /* Try to get a VIPS image interpretation from an object.
  */
 get_interpretation x
-	= Image_interpretation.colour_spaces.lookup 0 1 x.colour_space, is_Colour x
-	= vips_image_guess_interpretation (get_image x), has_image x
-	// slightly odd ... but our display is always 0-255, so it makes sense for
-	// a plain number to be in the same range
-	= Image_interpretation.sRGB, is_real x
-	= oo_unary_function get_interpretation_op x, is_class x
-	= error (_ "bad arguments to " ++ "get_interpretation")
+    = Image_interpretation.colour_spaces.lookup 0 1 x.colour_space, is_Colour x
+    = vips_image_guess_interpretation (get_image x), has_image x
+    // slightly odd ... but our display is always 0-255, so it makes sense for
+    // a plain number to be in the same range
+    = Image_interpretation.sRGB, is_real x
+    = oo_unary_function get_interpretation_op x, is_class x
+    = error (_ "bad arguments to " ++ "get_interpretation")
 {
-	get_interpretation_op = Operator "get_interpretation" get_interpretation
-		Operator_type.COMPOUND false;
+    get_interpretation_op = Operator "get_interpretation" get_interpretation
+        Operator_type.COMPOUND false;
 }
 
 has_image x = is_image x || is_Image x || is_Arrow x;
 get_image x
-	= x.value, is_Image x
-	= x.image.value, is_Arrow x
-	= x, is_image x
-	= oo_unary_function get_image_op x, is_class x
-	= error (_ "bad arguments to " ++ "get_image")
+    = x.value, is_Image x
+    = x.image.value, is_Arrow x
+    = x, is_image x
+    = oo_unary_function get_image_op x, is_class x
+    = error (_ "bad arguments to " ++ "get_image")
 {
-	get_image_op = Operator "get_image" get_image
-		Operator_type.COMPOUND false;
+    get_image_op = Operator "get_image" get_image
+        Operator_type.COMPOUND false;
 }
 
-has_header field x = has_member field x || is_Arrow x || is_image x ||
-    is_Colour x;
-
+has_header field x
+    = has_member field x || is_Arrow x || is_image x || is_Colour x;
 get_header field x
-	= get_member field x, has_member field x
-	= oo_unary_function get_header_op x, is_class x
-	= vips_header_get field x, is_image x
-	= get_header field (get_image x), has_image x
-	= error (_ "bad arguments to " ++ "get_header")
+    = get_member field x, has_member field x
+    = oo_unary_function get_header_op x, is_class x
+    = vips_header_get field x, is_image x
+    = get_header field (get_image x), has_image x
+    = error (_ "bad arguments to " ++ "get_header")
 {
-	get_header_op = Operator "get_header" (get_header field)
-		Operator_type.COMPOUND false;
+    get_header_op = Operator "get_header" (get_header field)
+        Operator_type.COMPOUND false;
 }
 
 has_format = has_header "format";
 get_format = get_header "format";
 
 has_bands x = is_image x || has_member "bands" x || is_Arrow x;
-
 get_bands x
-	= x.bands, has_member "bands" x
-	= get_header "bands" (get_image x), has_image x
-	= 1, is_real x
-	= len x, is_real_list x
-	= oo_unary_function get_bands_op x, is_class x
-	= error (_ "bad arguments to " ++ "get_bands")
+    = x.bands, has_member "bands" x
+    = get_header "bands" (get_image x), has_image x
+    = 1, is_real x
+    = len x, is_real_list x
+    = oo_unary_function get_bands_op x, is_class x
+    = error (_ "bad arguments to " ++ "get_bands")
 {
-	get_bands_op = Operator "get_bands" get_bands
-		Operator_type.COMPOUND false;
+    get_bands_op = Operator "get_bands" get_bands
+        Operator_type.COMPOUND false;
 }
 
 has_coding = has_header "coding";
@@ -298,30 +295,28 @@ has_value = has_member "value";
 get_value = get_header "value";
 
 has_number x = is_number x || is_Real x;
-
 get_number x
-	= x.value, is_Real x
-	= x, is_number x
-	= oo_unary_function get_number_op x, is_class x
-	= error (_ "bad arguments to " ++ "get_number")
+    = x.value, is_Real x
+    = x, is_number x
+    = oo_unary_function get_number_op x, is_class x
+    = error (_ "bad arguments to " ++ "get_number")
 {
-	get_number_op = Operator "get_number" get_number
-		Operator_type.COMPOUND false;
+    get_number_op = Operator "get_number" get_number
+        Operator_type.COMPOUND false;
 }
 
 has_real x = is_real x || is_Real x;
-
 get_real x
-	= x.value, is_Real x
-	= x, is_real x
-	= oo_unary_function get_real_op x, is_class x
-	= error (_ "bad arguments to " ++ "get_real")
+    = x.value, is_Real x
+    = x, is_real x
+    = oo_unary_function get_real_op x, is_class x
+    = error (_ "bad arguments to " ++ "get_real")
 {
-	get_real_op = Operator "get_real" get_real
-		Operator_type.COMPOUND false;
+    get_real_op = Operator "get_real" get_real
+        Operator_type.COMPOUND false;
 }
 
-// like has/get member, but first in a lst of objects
+// like has/get member, but first in a list of objects
 has_member_list has objects = filter has objects != [];
 
 // need one with the args swapped
@@ -329,35 +324,35 @@ get_member = converse dot;
 
 // get a member from the first of a list of objects to have it
 get_member_list has get objects
-	= hd members, members != []
-	= error "unable to get property"
+    = hd members, members != []
+    = error "unable to get property"
 {
-	members = map get (filter has objects);
+    members = map get (filter has objects);
 }
 
 is_hist x
-	= has_image x && (h == 1 || w == 1 || t == Image_interpretation.HISTOGRAM)
+    = has_image x && (h == 1 || w == 1 || t == Image_interpretation.HISTOGRAM)
 {
-	im = get_image x;
-	w = get_width im;
-	h = get_height im;
-	t = get_interpretation im;
+    im = get_image x;
+    w = get_width im;
+    h = get_height im;
+    t = get_interpretation im;
 }
 
 get_header_type field x
-	= oo_unary_function get_header_type_op x, is_class x
-	= vips_header_typeof field x, is_image x
-	= error (_ "bad arguments to " ++ "get_header_type")
+    = oo_unary_function get_header_type_op x, is_class x
+    = vips_header_typeof field x, is_image x
+    = error (_ "bad arguments to " ++ "get_header_type")
 {
-	get_header_type_op = Operator "get_header_type" (get_header_type field)
-		Operator_type.COMPOUND false;
+    get_header_type_op = Operator "get_header_type" (get_header_type field)
+        Operator_type.COMPOUND false;
 }
 
 set_header field value x
-	= oo_unary_function set_header_op x, is_class x
-	= copy [field => value] x, is_image x
-	= error (_ "bad arguments to " ++ "set_header")
+    = oo_unary_function set_header_op x, is_class x
+    = copy [field => value] x, is_image x
+    = error (_ "bad arguments to " ++ "set_header")
 {
-	set_header_op = Operator "set_header" (set_header field value)
-		Operator_type.COMPOUND false;
+    set_header_op = Operator "set_header" (set_header field value)
+        Operator_type.COMPOUND false;
 }
