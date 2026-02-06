@@ -20,8 +20,7 @@ check_xy_list = [is_xy_list, _ "list of form [[1, 2], [3, 4], [5, 6], ...]"];
 check_instance name = [is_instanceof name, name];
 check_Image = check_instance "Image";
 check_Matrix = [is_Matrix, _ "Matrix"];
-check_colour_space = [is_colour_space,
-    joinsep "|" Image_type.colour_spaces.names];
+check_colour_space = [is_colour_space, joinsep "|" Interpretation_allowed.keys];
 check_rectangular = [is_rectangular, _ "rectangular [[*]]"];
 check_Guide = [is_Guide, _ "HGuide|VGuide"];
 check_Colour = check_instance (_ "Colour");
@@ -61,7 +60,7 @@ check_args x
     badargs = map (extract 1)
         (filter test_fail (zip2 (map testarg argcheck) [0..]))
     {
-        testarg x = x?2?0 x?0;
+        testarg [arg, arg_name, [test_fn, arg_type]] = test_fn arg;
     }
 
     // set of failed allcheck indexes
@@ -93,13 +92,15 @@ check_args x
             concat (map fmt_arg argcheck)
     {
         fmt n = _ "condition failed" ++ ": " ++ allcheck?n?1 ++ "\n";
-        fmt_arg l = indent ++ l?1 ++ " = " ++ print l?0 ++ "\n";
+        fmt_arg [arg, arg_name, [test_fn, arg_type]]
+            = indent ++ arg_name ++ " = " ++ print arg ++ "\n";
     }
 
     // make arg type notes
     arg_types = joinsep "\n" (map fmt argcheck)
     {
-        fmt l = indent ++ l?1 ++ " is of type " ++ l?2?1;
+        fmt [arg, arg_name, [test_fn, arg_type]]
+            = indent ++ arg_name ++ " is of type " ++ arg_type;
     }
 
     // extra bit at the bottom, if we have any conditions
@@ -109,7 +110,7 @@ check_args x
 
     // make a list of all the allcheck descriptions, with a few
     // spaces in front
-    all_desc_list = map (join indent @ extract 1) allcheck;
+    all_desc_list = map (\[test, desc] join indent desc) allcheck;
 
     // join em up to make a set of condition notes
     all_desc = joinsep "\n" all_desc_list;
@@ -135,7 +136,7 @@ oo_converse op
         (converse op.fn) op.type op.symmetric
 {
     converse_name x
-        = init x, last x == last "'"
+        = init x, last x == '\''
         = x ++ "'";
 }
 

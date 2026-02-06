@@ -64,7 +64,7 @@ Colour_to_colour_item = class
 
 Colour_convert_item = class
 	Menupullright (_ "_Colourspace") (_ "convert to various colour spaces") {
-	spaces = Image_type.image_colour_spaces;
+	spaces = Interpretation.keys;
 
 	conv dest x = class
 		_result {
@@ -77,62 +77,62 @@ Colour_convert_item = class
 
 	Mono_item = class
 		Menuaction (_ "_Monochrome") (_ "convert to mono colourspace") {
-		action x = conv Image_type.B_W x;
+		action x = conv Interpretation_allowed.B_W x;
 	}
 
 	sRGB_item = class
 		Menuaction (_ "_sRGB") (_ "convert to sRGB colourspace") {
-		action x = conv Image_type.sRGB x;
+		action x = conv Interpretation_allowed.sRGB x;
 	}
 
 	scRGB_item = class
 		Menuaction (_ "_scRGB") (_ "convert to scRGB colourspace") {
-		action x = conv Image_type.scRGB x;
+		action x = conv Interpretation_allowed.scRGB x;
 	}
 
 	GREY16_item = class
 		Menuaction (_ "_GREY16") (_ "convert to GREY16 colourspace") {
-		action x = conv Image_type.GREY16 x;
+		action x = conv Interpretation_allowed.GREY16 x;
 	}
 
 	RGB16_item = class
 		Menuaction (_ "_RGB16") (_ "convert to RGB16 colourspace") {
-		action x = conv Image_type.RGB16 x;
+		action x = conv Interpretation_allowed.RGB16 x;
 	}
 
 	Lab_item = class
 		Menuaction (_ "_Lab") (_ "convert to Lab colourspace (float Lab)") {
-		action x = conv Image_type.LAB x;
+		action x = conv Interpretation_allowed.LAB x;
 	}
 
 	LabQ_item = class
 		Menuaction (_ "Lab_Q") (_ "convert to LabQ colourspace (32-bit Lab)") {
-		action x = conv Image_type.LABQ x;
+		action x = conv Interpretation_allowed.LABQ x;
 	}
 
 	LabS_item = class
 		Menuaction (_ "Lab_S") (_ "convert to LabS colourspace (48-bit Lab)") {
-		action x = conv Image_type.LABS x;
+		action x = conv Interpretation_allowed.LABS x;
 	}
 
 	LCh_item = class
 		Menuaction (_ "L_Ch") (_ "convert to LCh colourspace") {
-		action x = conv Image_type.LCH x;
+		action x = conv Interpretation_allowed.LCH x;
 	}
 
 	XYZ_item = class
 		Menuaction (_ "_XYZ") (_ "convert to XYZ colourspace") {
-		action x = conv Image_type.XYZ x;
+		action x = conv Interpretation_allowed.XYZ x;
 	}
 
 	Yxy_item = class
 		Menuaction (_ "_Yxy") (_ "convert to Yxy colourspace") {
-		action x = conv Image_type.YXY x;
+		action x = conv Interpretation_allowed.YXY x;
 	}
 
 	UCS_item = class
 		Menuaction (_ "_UCS") (_ "convert to UCS colourspace") {
-		action x = conv Image_type.UCS x;
+		action x = conv Interpretation_allowed.UCS x;
 	}
 }
 
@@ -141,7 +141,7 @@ Colour_convert_item = class
 Colour_tag_item = class
 	Menupullright (_ "_Tag As")
 		(_ "tag object as being in various colour spaces") {
-	spaces = Image_type.image_colour_spaces;
+	spaces = Interpretation_allowed.keys;
 
 	tag dest x = class
 		_result {

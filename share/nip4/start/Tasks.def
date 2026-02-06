@@ -179,7 +179,7 @@ Tasks_capture_item = class
 					= _raw_grab;
 
 				frame'
-					= colour_transform_to Image_type.B_W frame, mono
+					= colour_transform_to Interpretation.B_W frame, mono
 					= frame;
 			}
 		}
@@ -236,7 +236,7 @@ Tasks_capture_item = class
 					area x = x.width * x.height;
 					larger x y = area x > area y;
 					[image, patch] = sortc larger [a, b];
-					to_xyz = colour_transform_to Image_type.XYZ;
+					to_xyz = colour_transform_to Interpretation.XYZ;
 
 					// white balance in XYZ
 					patch_xyz = to_colour (to_xyz patch);
@@ -308,7 +308,7 @@ Tasks_capture_item = class
 			// load true values
 			_true_Lab = Matrix_file macbeth.value;
 			_true_XYZ = colour_transform
-				Image_type.LAB Image_type.XYZ _true_Lab;
+				Interpretation.LAB Interpretation.XYZ _true_Lab;
 
 			// get Ys of greyscale
 			_true_grey_Y = map (extract 1) (drop 18 _true_XYZ.value);
@@ -355,7 +355,7 @@ Tasks_capture_item = class
 
 			// now turn the camera to LAB and calculate dE76
 			_camera'' = (to_matrix @
-				colour_transform Image_type.XYZ Image_type.LAB @
+				colour_transform Interpretation.XYZ Interpretation.LAB @
 				recomb M @
 				multiply scale @
 				to_image) _camera';
@@ -382,7 +382,7 @@ Tasks_capture_item = class
 
 			// convert RGB camera to Lab
 			_result = (Image @
-				colour_transform Image_type.XYZ Image_type.LAB @
+				colour_transform Interpretation.XYZ Interpretation.LAB @
 				norm @
 				recomb M @
 				cast_float @
@@ -407,7 +407,7 @@ Tasks_capture_item = class
 					[a, b];
 
 				result = (Image @
-					colour_transform Image_type.XYZ Image_type.LAB @
+					colour_transform Interpretation.XYZ Interpretation.LAB @
 					calib.norm @
 					recomb calib.M @
 					cast_float @
@@ -967,7 +967,7 @@ Tasks_print_item = class
 				process image
 					= sharpen params?0 params?1
 						params?2 params?3 params?4 params?5
-						(colour_transform_to Image_type.LABQ image)
+						(colour_transform_to Interpretation.LABQ image)
 				{
 					// sharpen params for various dpi
 					// just change the size of the area we search

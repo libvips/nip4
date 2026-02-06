@@ -47,7 +47,7 @@ Filter_conv_item = class
 				process in
 					= Image in'''
 				{
-					in' = colour_transform_to Image_type.LABS in.value;
+					in' = colour_transform_to Interpretation.LABS in.value;
 					in'' = sharpen [3, 5, 7, 9, 11, 51]?size st bm dm fs js in';
 					in''' = colour_transform_to (get_type in) in'';
 				}
@@ -576,7 +576,7 @@ Filter_enhance_item = class
 				process im
 					= falsecolour mono''
 				{
-					mono = colour_transform_to Image_type.B_W im;
+					mono = colour_transform_to Interpretation.B_W im;
 					mono' = mono + o;
 					mono''
 						= (unsigned char) mono', clip
@@ -606,7 +606,7 @@ Filter_enhance_item = class
 				process in
 					= Image in''
 				{
-					in' = colour_transform_to Image_type.B_W in.value;
+					in' = colour_transform_to Interpretation.B_W in.value;
 					fn
 						= im_stdif, border
 						= im_stdif_raw;
@@ -1024,7 +1024,7 @@ Filter_blend_item = class
 			= (unsigned char) (to_real opacity / 255 * im);
 
 		// to mono
-		intensity = colour_transform_to Image_type.B_W;
+		intensity = colour_transform_to Interpretation.B_W;
 
 		// All the blend functions
 		// I am grateful to this page
@@ -1259,8 +1259,8 @@ Filter_blend_item = class
 				fg' = moveit (put_alpha fg) bg hmove vmove;
 
 				// transform to sRGB
-				fg'' = colour_transform_to Image_type.sRGB (lose_alpha fg');
-				bg' = colour_transform_to Image_type.sRGB (lose_alpha bg);
+				fg'' = colour_transform_to Interpretation.sRGB (lose_alpha fg');
+				bg' = colour_transform_to Interpretation.sRGB (lose_alpha bg);
 
 				// alphas merged
 				merged_alpha = get_alpha bg | get_alpha fg';
@@ -1301,8 +1301,8 @@ Filter_overlay_header_item = class
 						(0 ++ a' ++ b'),
 						(0 ++ b' ++ a')]?colour
 			{
-				a' = colour_transform_to Image_type.B_W a;
-				b' = colour_transform_to Image_type.B_W b;
+				a' = colour_transform_to Interpretation.B_W a;
+				b' = colour_transform_to Interpretation.B_W b;
 			}
 		}
 	}
@@ -1326,8 +1326,8 @@ Filter_colourize_item = class
 				[mono, colour] =
 					sortc (const (is_colour_type @ get_type)) [a, b];
 
-				colour' = tint * colour_transform_to Image_type.LAB colour;
-				mono' = colour_transform_to Image_type.B_W mono;
+				colour' = tint * colour_transform_to Interpretation.LAB colour;
+				mono' = colour_transform_to Interpretation.B_W mono;
 				colourized = (mono' / 2.55) ++ colour'?1 ++ colour'?2;
 				colourized' = set_header $interpretation $lab colourized;
 			}
@@ -1418,7 +1418,7 @@ Filter_negative_item = class
 		invert in
 			= cast in.format (colour_transform_to (get_type in) rgb')
 		{
-			rgb = colour_transform_to Image_type.sRGB in;
+			rgb = colour_transform_to Interpretation.sRGB in;
 			rgb' = 255 - rgb;
 		}
 	}
@@ -1480,7 +1480,7 @@ Filter_diffuse_glow_item = class
 				= image'
 			{
 				mono = (unsigned char) (colour_transform_to
-					Image_type.B_W image);
+					Interpretation.B_W image);
 				thresh = hist_thresh (highlights.value / 100) mono;
 				mask = mono > thresh;
 				blur = convsep (matrix_gaussian_blur r.value) mask;

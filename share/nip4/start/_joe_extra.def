@@ -36,7 +36,7 @@ Frame_item = class
 			overlap = Expression "Size of frame overlap in cm" 0;
 			variables = Frame_variables 0;
 
-			_type = Image_type.colour_spaces.get_name b.type;
+			_type = Interpretation.get_key b.type;
 
 			//If applied the count colour be seen for -ve values of overlap
 			mount_options = Mount_options _type ppcm.expr;
@@ -99,7 +99,7 @@ Frame_item = class
 			overlap = Expression "Size of frame overlap in cm" 0;
 			variables = Frame_variables 0;
 
-			_type = Image_type.colour_spaces.get_name b.type;
+			_type = Interpretation.get_key b.type;
 			//If applied the count colour be seen for -ve values of overlap
 			mount_options = Mount_options _type ppcm.expr;
 
@@ -159,7 +159,7 @@ Frame_item = class
 			overlap = Expression "Size of frame overlap in cm" 0;
 			variables = Frame_variables 1;
 
-			_type = Image_type.colour_spaces.get_name b.type;
+			_type = Interpretation.get_key b.type;
 
 			//If applied the count colour be seen for -ve values of overlap
 			mount_options = Mount_options _type ppcm.expr;
