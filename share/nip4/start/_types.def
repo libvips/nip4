@@ -573,8 +573,7 @@ Colour_picker default_colour default_value = class
     Colour space.item colour.expr {
     _vislevel = 3;
 
-    space = Option_enum "Colour space"
-        Interpretation Interpretation_description default_colour;
+    space = Option_enum "Colour space" Interpretation_3ary default_colour;
     colour = Expression "Colour value" default_value;
 
     Colour_edit colour_space value =
@@ -836,8 +835,8 @@ Format = class Enum {
     ];
 }
 
-// interpretations which are colorimetric spaces
-Interpretation = class Enum {
+// interpretations which are 3-ary colorimetric spaces
+Interpretation_3ary = class Enum {
     XYZ = 12;
     LAB = 13;
     UCS = 18;
@@ -860,8 +859,8 @@ Interpretation = class Enum {
 
 }
 
-// supported colourmetric spaces is bigger
-Interpretation_allowed = class Interpretation {
+// also colourmetric, but some dupes, format hints, 1-aries
+Interpretation_nary = class Interpretation_3ary {
     B_W = 1;
     LABQ = 16;
     LABS = 21;
@@ -877,8 +876,8 @@ Interpretation_allowed = class Interpretation {
     ];
 }
 
-// non-colourimetric interpretations
-Interpretation_all = class Interpretation_allowed {
+// And all all the non-colourimetric interpretations
+Interpretation = class Interpretation_nary {
     MULTIBAND = 0;
     HISTOGRAM = 10;
     CMYK = 15;

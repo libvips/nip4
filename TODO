@@ -6,6 +6,20 @@
 
     how did we name these before?
 
+    had
+
+    Image_type ...                      all interpretations
+    Image_type.colour_spaces ...        all 3-ary colorimetric spaces
+    Image_type.image_colour_spaces ...  all n-ary colorimetric spaces
+
+  rename as
+
+    Interpretation_3ary
+    Interpretation_nary
+    Interpretation
+
+  will save a lot of refactoring
+
 
 
 - try
