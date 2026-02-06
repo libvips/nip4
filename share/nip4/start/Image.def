@@ -960,9 +960,6 @@ Image_header_item = class
 
 	Image_edit_header_item = class
 		Menuaction "_Edit" "change advisory header fields of image" {
-		type_names = Interpretation.type_names;
-		all_names = sort (map (extract 0) type_names.value);
-
 		get_prop has get def x
 			= get x, has x
 			= def;
@@ -976,12 +973,11 @@ Image_header_item = class
 			nxoff = Expression "Xoffset" (get_prop has_xoffset get_xoffset 0 x);
 			nyoff = Expression "Yoffset" (get_prop has_yoffset get_yoffset 0 x);
 
-			type_option
-				= Option_enum "Image type" Interpretation.type_names
-					(Interpretation.type_names.get_name type)
+			ninterpretation
+				= Option_enum "Interpretation" Interpretation interp
 			{
-				type
-					= x.type, is_Image x
+				interp
+					= x.interpretation, is_Image x
 					= Interpretation.MULTIBAND;
 			}
 
@@ -989,9 +985,13 @@ Image_header_item = class
 				= map_unary process x
 			{
 				process image
-					= Image (im_copy_set image.value type_option.value_thing
-						(to_real nxres) (to_real nyres)
-						(to_real nxoff) (to_real nyoff));
+					= copy [
+                        $interpretation => ninterpretation.value_key,
+                        $xres => (to_real nxres),
+                        $yres => (to_real nyres),
+                        $xoffset => (to_real nxoffset),
+                        $yoffset => (to_real nyoffset)
+                    ] x;
 			}
 		}
 	}
@@ -1782,21 +1782,16 @@ Image_alpha_item = class
 			_result {
 			_vislevel = 3;
 
-			blend = Option_enum (_ "Blend mode") modes "over"
-			{
-				modes = Blend_type.types;
-			}
-			compositing_space = Option_enum (_ "Compositing space") spaces "sRGB"
-			{
-				spaces = Interpretation.image_colour_spaces;
-			}
+			blend = Option_enum (_ "Blend mode") Blend "over";
+			compositing_space = Option_enum (_ "Compositing space")
+                Interpretation_nary "sRGB";
 			premultiplied = Toggle (_ "Premultiplied") false;
 
 			_result
 				= Image output
 			{
 				output = vips_composite [
-					$compositing_space => compositing_space.value_thing,
+					$compositing_space => compositing_space.value_key,
 					$premultiplied => premultiplied.value
 				] [y.value, x.value] blend.value;
 			}

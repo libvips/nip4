@@ -1,0 +1,17 @@
+#!/usr/bin/env snip
+
+// test the _Object class, or as much as we can
+
+sample_image = Image_file "../images/slanted_oval_vase2.jpg";
+binary_operator = oo_binary_lookup "add";
+unary_operator = oo_unary_lookup "sin";
+
+main = unit_test [
+    [binary_operator.op_name == "add", "oo_binary_lookup"],
+    [unary_operator.op_name == "sin", "oo_binary_lookup"],
+    [(oo_converse binary_operator).op_name == "add'", "op_converse"],
+    [((oo_converse @ oo_converse) binary_operator).op_name == "add",
+        "op_converse 2"],
+    [mean (sample_image + sample_image) == 2 * mean sample_image, "add"]
+];
+

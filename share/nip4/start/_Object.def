@@ -20,7 +20,7 @@ check_xy_list = [is_xy_list, _ "list of form [[1, 2], [3, 4], [5, 6], ...]"];
 check_instance name = [is_instanceof name, name];
 check_Image = check_instance "Image";
 check_Matrix = [is_Matrix, _ "Matrix"];
-check_colour_space = [is_colour_space, joinsep "|" Interpretation_allowed.keys];
+check_colour_space = [is_colour_space, joinsep "|" Interpretation_3ary.keys];
 check_rectangular = [is_rectangular, _ "rectangular [[*]]"];
 check_Guide = [is_Guide, _ "HGuide|VGuide"];
 check_Colour = check_instance (_ "Colour");
@@ -191,8 +191,7 @@ oo_binary_lookup op_name
             Operator_type.RELATIONAL false
     ];
 
-    matches = filter test_name operator_table;
-    test_name x = x.op_name == op_name;
+    matches = [op :: op <- operator_table; op.op_name == op_name];
 }
 
 /* Given an operator name, look up a function that implements that
@@ -257,8 +256,7 @@ oo_unary_lookup op_name
         Operator "floor" floor Operator_type.ARITHMETIC false
     ];
 
-    matches = filter test_name operator_table;
-    test_name x = x.op_name == op_name;
+    matches = [op :: op <- operator_table; op.op_name == op_name];
 }
 
 /* Find the matching methods in a method table.
