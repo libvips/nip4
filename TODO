@@ -1,3 +1,15 @@
+- don't use Option_enum directly, instead use eg.
+
+	Interpretation.picker "sRGB"
+
+- remove Table?
+
+- Matrix equal fails eg.:
+
+	Matrix [[1, 2], [3, 4]] + 1 == Matrix [[2, 3], [4, 5]]
+
+  not clear why
+
 - need test_stdenv
 
 	not the whole thing, but at least image_new!!

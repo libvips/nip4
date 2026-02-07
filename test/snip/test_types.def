@@ -5,6 +5,20 @@ sample_image = Image (image_new [
     $interpretation => Interpretation.sRGB
 ] 1 1);
 
+Base_enum = class Enum {
+	A = 1;
+    B = 2;
+
+    _extra = 99;
+}
+
+Derived_enum = class Base_enum {
+	C = 3;
+    D = 4;
+
+    _extra = 100;
+}
+
 main = unit_test [
     [(Group [1, 2]).value == [1, 2], "Group construct"],
     [(Group [1, 2] + 2).value == [3, 4], "Group add"],
@@ -27,6 +41,21 @@ main = unit_test [
         "Vector equal"],
     [mean(sample_image + Vector [1, 2, 3]) == mean (Vector [2, 4, 6]),
         "image + Vector"],
+
+    [Base_enum.keys == ["A", "B"], "base enum keys"],
+    [Base_enum.values == [1, 2], "base enum keys"],
+    [Derived_enum.keys == ["A", "B", "C", "D"], "derived enum keys"],
+    [Derived_enum.values == [1, 2, 3, 4], "derived enum keys"],
+    [Derived_enum.keys?(Derived_enum.get_index_from_key "B") == "B",
+        "derived enum index"],
+
+    [(Matrix [[1, 2], [3, 4]]).value == [[1, 2], [3, 4]], "Matrix construct"],
+    [(Matrix [[1, 2], [3, 4]] + 1).value == [[2, 3], [4, 5]],
+        "Matrix scalar add"],
+    [Matrix [[1, 2], [3, 4]] + 1 == Matrix [[2, 3], [4, 5]],
+        "Matrix equal"],
+
+    // add more!
 
     [(List [1, 2]).value == [1, 2], "List construct"],
     [(List [1, 2] + 2).value == [3, 4], "List add scalar"],

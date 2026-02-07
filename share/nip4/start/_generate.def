@@ -95,7 +95,7 @@ image_white im
         colour_spaces.present 1 type
     = white_lab,
         coding == Coding.LABPACK
-    = Vector (replicate bands (Format._maxval.lookup 1 0 format))
+    = Vector (replicate bands (Format._maxval.lookup 0 1 format))
 {
     bands = im.bands;
     type = im.type;
