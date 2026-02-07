@@ -1,3 +1,7 @@
+- need test_stdenv
+
+	not the whole thing, but at least image_new!!
+
 - try
 
     cd x/y/z

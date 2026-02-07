@@ -1,0 +1,41 @@
+#!/usr/bin/env snip
+
+sample_image = Image (image_new [
+    $pixel => Vector [1, 2, 3],
+    $interpretation => Interpretation.sRGB
+] 1 1);
+
+main = unit_test [
+    [(Group [1, 2]).value == [1, 2], "Group construct"],
+    [(Group [1, 2] + 2).value == [3, 4], "Group add"],
+    [(Group [1, 2] == Group [1, 2]).value == [true, true], "Group equal"],
+    [(if Group [true, false] then Group [1, 2] else Group [3, 4]).value ==
+        [1, 4],
+            "Group ifthenelse"],
+
+    [(Real 12).value == 12, "Real construct"],
+    [(Real 12 + 1).value == 13, "Real add"],
+    [Real 12 + 1 == Real 13, "Real equal"],
+
+    [(Bool true).value == true, "Bool construct"],
+    [(!Bool true).value == false, "not Bool"],
+    [!Bool true == false, "Bool equal"],
+
+    [(Vector [1, 2, 3]).value == [1, 2, 3], "Vector construct"],
+    [(Vector [1, 2, 3] + 1).value == [2, 3, 4], "Vector add"],
+    [(Vector [1, 2, 3] + 1 == Vector [2, 3, 4]).value == [255, 255, 255],
+        "Vector equal"],
+    [mean(sample_image + Vector [1, 2, 3]) == mean (Vector [2, 4, 6]),
+        "image + Vector"],
+
+    [(List [1, 2]).value == [1, 2], "List construct"],
+    [(List [1, 2] + 2).value == [3, 4], "List add scalar"],
+    [List [1, 2] + 2 == List [3, 4], "List add scalar equal"],
+    [List [1, 2] + List [3, 4] == List [4, 6], "List add vector"],
+    [2 + List [1, 2] == List [3, 4], "scalar add List equal"],
+    [hd (List [1, 2]) == 1, "List hd"],
+    [tl (List [1]) == [], "List tl"],
+    // can't overload `:`, sadly
+    [List [] == [], "List [] == []"]
+
+];
