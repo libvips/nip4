@@ -6,14 +6,14 @@ sample_image = Image (image_new [
 ] 1 1);
 
 Base_enum = class Enum {
-	A = 1;
+    A = 1;
     B = 2;
 
     _extra = 99;
 }
 
 Derived_enum = class Base_enum {
-	C = 3;
+    C = 3;
     D = 4;
 
     _extra = 100;

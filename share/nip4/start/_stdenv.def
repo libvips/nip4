@@ -16,8 +16,8 @@ logical_or a b = a || b;
 bitwise_and a b = a & b;
 bitwise_or a b = a | b;
 eor a b = a ^ b;
-left_shift a b = a << b;
-right_shift a b = a >> b;
+lshift a b = a << b;
+rshift a b = a >> b;
 not a = !a;
 
 less a b = a < b;

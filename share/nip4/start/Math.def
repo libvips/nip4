@@ -217,12 +217,12 @@ Math_boolean_item = class
 
 	Right_shift_item = class
 		Menuaction "Shift _Right" "shift a right by b bits" {
-		action a b = map_binary right_shift a b;
+		action a b = map_binary rshift a b;
 	}
 
 	Left_shift_item = class
 		Menuaction "Shift _Left" "shift a left by b bits" {
-		action a b = map_binary left_shift a b;
+		action a b = map_binary lshift a b;
 	}
 
 	sep2 = Menuseparator;

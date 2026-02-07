@@ -157,9 +157,9 @@ oo_binary_lookup op_name
             Operator_type.ARITHMETIC false,
         Operator "subscript" subscript
             Operator_type.ARITHMETIC false,
-        Operator "left_shift" left_shift
+        Operator "lshift" lshift
             Operator_type.ARITHMETIC false,
-        Operator "right_shift" right_shift
+        Operator "rshift" rshift
             Operator_type.ARITHMETIC false,
         Operator "divide" divide
             Operator_type.ARITHMETIC false,

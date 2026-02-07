@@ -439,6 +439,12 @@ Matrix_base value = class
             (is_Matrix x || is_Real x || is_Vector x) &&
             op.type == Operator_type.COMPOUND_REWRAP],
 
+        // for equality, must be Matrix op Matrix, and only compare value
+        [op.fn this.value x.value,
+            is_Matrix x &&
+            (op.op_name == "noteq" || op.op_name == "noteq'" ||
+             op.op_name == "equal" || op.op_name == "equal'")],
+
         [op.fn this.value x,
             op.type == Operator_type.COMPOUND]
 
@@ -573,8 +579,8 @@ Colour_picker default_colour default_value = class
     Colour space.item colour.expr {
     _vislevel = 3;
 
-    space = Option_enum "Colour space" Interpretation_3ary default_colour;
-    colour = Expression "Colour value" default_value;
+    space = Interpretation_3ary.picker default_colour;
+    colour = Expression "Value" default_value;
 
     Colour_edit colour_space value =
         Colour_picker colour_space value;
@@ -674,8 +680,7 @@ Rect left top width height = class
             (op.op_name == "equal" || op.op_name == "equal'")],
         [!equal x,
             is_Rect x &&
-            (op.op_name == "noteq" ||
-                op.op_name == "noteq'")],
+            (op.op_name == "noteq" || op.op_name == "noteq'")],
 
         // binops with a complex are the same as (comp op comp)
         [oo_binary_function op this (Rect (re x) (im x) 0 0),

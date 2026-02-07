@@ -1,0 +1,6 @@
+#!/usr/bin/env snip
+
+main = unit_test [
+    [(Image (image_new [] 1 1)).width == 1, "image_new"]
+
+];

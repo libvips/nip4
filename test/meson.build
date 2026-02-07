@@ -36,6 +36,8 @@ snip_tests = [
   'test_list.def',
   'test_predicate.def',
   'test_object.def',
+  'test_stdenv.def',
+  'test_types.def',
 ]
 
 foreach name : should_pass_tests
