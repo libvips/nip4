@@ -89,7 +89,7 @@ main = unit_test [
         "Rect intersect"],
     [(Rect 10 20 30 40).margin_adjust 2 == Rect 8 18 34 44, "Rect margin"],
 
-    // add more!
+    // add more! from Image onwards
 
     [(List [1, 2]).value == [1, 2], "List construct"],
     [(List [1, 2] + 2).value == [3, 4], "List add scalar"],

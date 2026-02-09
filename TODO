@@ -1,12 +1,12 @@
+- reached Image in _types
+
+	maybe enough
+
 - don't use Option_enum directly, instead use eg.
 
 	Interpretation_3ary.picker "sRGB"
 
 - remove Table?
-
-- need test_stdenv
-
-	not the whole thing, but at least image_new!!
 
 - try
 
@@ -72,7 +72,7 @@
     _predicate.def      done
     _stdenv.def         done
     _Object.def         done
-    _types.def
+    _types.def		done
     _generate.def
     _convert.def
 

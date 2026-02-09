@@ -378,6 +378,22 @@ Table value = class
     }
 }
 
+/* How to display a matrix: text, sliders, toggles, or text plus scale/offset.
+ */
+Matrix_display = class Enum {
+    TEXT = 0;
+    SLIDER = 1;
+    TOGGLE = 2;
+    TEXT_SCALE_OFFSET = 3;
+
+    _description = [
+        [TEXT, _ "Text"],
+        [SLIDER, _ "Sliders"],
+        [TOGGLE, _ "Toggles"],
+        [TEXT_SCALE_OFFSET, _ "Text, scale and offset"]
+    ];
+}
+
 /* A rectangular array of real.
  */
 Matrix_base value = class
@@ -479,22 +495,6 @@ Matrix_base value = class
         [op.fn this.value,
             true]
     ] ++ super.oo_unary_table op;
-}
-
-/* How to display a matrix: text, sliders, toggles, or text plus scale/offset.
- */
-Matrix_display = class Enum {
-    TEXT = 0;
-    SLIDER = 1;
-    TOGGLE = 2;
-    TEXT_SCALE_OFFSET = 3;
-
-    _description = [
-        [TEXT, _ "Text"],
-        [SLIDER, _ "Sliders"],
-        [TOGGLE, _ "Toggles"],
-        [TEXT_SCALE_OFFSET, _ "Text, scale and offset"]
-    ];
 }
 
 /* A matrix as VIPS sees them ... add scale, offset and filename. For nip, add
@@ -1063,7 +1063,7 @@ Region image left top width height = class
     // out of bounds
     value
         = crop left top width height image.value,
-            image_rect.includes_rect region_rect
+            region_rect <= image_rect
         = image.value
     {
         image_rect = Rect 0 0 image.width image.height;
@@ -1190,7 +1190,7 @@ Interpolate = class Enum {
         [VSQBS, $VipsInterpolateVsqbs]
     ];
 
-    new options type = vips_object_new Interpolate._to_vips?type?1 [] options;
+    _new options type = vips_object_new Interpolate._to_vips?type?1 [] options;
 }
 
 Intent = class {
@@ -1251,8 +1251,6 @@ Plot_format = class Enum {
     ];
 }
 
-/* "options" is a list of ["key", value] pairs.
- */
 Plot options value = class
     scope.Image value {
     Image value = this.Plot options value;
