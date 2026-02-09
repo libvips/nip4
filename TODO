@@ -1,3 +1,5 @@
+- test mixed colourspaces
+
 
 - don't use Option_enum directly, instead use eg.
 

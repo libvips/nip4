@@ -21,9 +21,9 @@ main = unit_test [
     [is_list_len_more 2 [1, 2, 3], "is_list_len_more"],
     [!is_list_len_more 2 [1, 2], "not is_list_len_more"],
     [!is_list_len_more 2 [1], "not is_list_len_more shorter"],
-    [is_list_len_moreeq 2 [1, 2, 3], "is_list_len_moreeq"],
-    [is_list_len_moreeq 2 [1, 2], "is_list_len_moreeq equal"],
-    [!is_list_len_moreeq 2 [1], "is_list_len_moreeq shorter"],
+    [is_list_len_more_equal 2 [1, 2, 3], "is_list_len_more_equal"],
+    [is_list_len_more_equal 2 [1, 2], "is_list_len_more_equal equal"],
+    [!is_list_len_more_equal 2 [1], "is_list_len_more_equal shorter"],
 
     [is_rectangular [1], "is_rectangular"],
     [is_rectangular [[[1]]], "is_rectangular 2"],

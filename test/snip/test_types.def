@@ -72,8 +72,22 @@ main = unit_test [
     [Colour "sRGB" [255, 255, 255] - Colour "sRGB" [1, 2, 3] ==
         Colour "sRGB" [254, 253, 252],
             "Colour equal"],
+    [Colour "sRGB" [255, 255, 255] - Colour "LAB" [10, 0, 0] ==
+        Colour "sRGB" [228, 228, 228],
+            "Colour subtract, mixed spaces"],
 
-    // colour arithmetic isn't working?
+    [!(Rect 10 20 30 40).is_empty, "Rect construct"],
+    [Rect 10 20 30 40 == Rect 10 20 30 40, "Rect equal"],
+    [Rect 10 20 30 40 + 10 == Rect 20 30 40 50, "Rect scalar add"],
+    [(Rect 10 20 30 40).includes_point 15 25, "Rect includes point"],
+    [Rect 10 20 30 40 >= Rect 10 20 30 40, "Rect includes rect"],
+    [!(Rect 10 20 30 40 > Rect 10 20 30 40), "Rect includes not equal rect"],
+    [Rect 0 0 100 100 > Rect 10 20 30 40, "Rect includes not equal rect"],
+    [Rect 10 20 30 40 + Rect 10 20 30 50 == Rect 10 20 30 50,
+        "Rect union"],
+    [Rect 10 20 30 40 * Rect 10 20 10 10 == Rect 10 20 10 10,
+        "Rect intersect"],
+    [(Rect 10 20 30 40).margin_adjust 2 == Rect 8 18 34 44, "Rect margin"],
 
     // add more!
 

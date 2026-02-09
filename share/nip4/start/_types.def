@@ -250,29 +250,29 @@ Vector value = class
             has_real x &&
             op.type == Operator_type.ARITHMETIC],
 
-		// need extra length check
-		[this.Vector (map bool_to_real
-			(map_binaryl op.fn this.value x.value)),
-			is_Vector x &&
-			len value == len x.value &&
-			op.type == Operator_type.RELATIONAL],
-		[this.Vector (map bool_to_real
-			(map_binaryl op.fn this.value (get_real x))),
-			has_real x &&
-			op.type == Operator_type.RELATIONAL],
-		[this.Vector (op.fn this.value x.value),
-			is_Vector x &&
-			len value == len x.value &&
-			op.type == Operator_type.COMPOUND_REWRAP],
-		// (is_Image x) is left for the Image class to handle
-		[vec op'.op_name x value,
-			is_image x],
-		[op.fn this.value x,
-			is_real x]
-	] ++ super.oo_binary_table op x
-	{
-		op' = oo_converse op;
-	};
+        // need extra length check
+        [this.Vector (map bool_to_real
+            (map_binaryl op.fn this.value x.value)),
+            is_Vector x &&
+            len value == len x.value &&
+            op.type == Operator_type.RELATIONAL],
+        [this.Vector (map bool_to_real
+            (map_binaryl op.fn this.value (get_real x))),
+            has_real x &&
+            op.type == Operator_type.RELATIONAL],
+        [this.Vector (op.fn this.value x.value),
+            is_Vector x &&
+            len value == len x.value &&
+            op.type == Operator_type.COMPOUND_REWRAP],
+        // (is_Image x) is left for the Image class to handle
+        [vec op'.op_name x value,
+            is_image x],
+        [op.fn this.value x,
+            is_real x]
+    ] ++ super.oo_binary_table op x
+    {
+        op' = oo_converse op;
+    };
 
     oo_unary_table op = [
         [this.Vector (map_unaryl op.fn this.value),
@@ -560,12 +560,12 @@ Colour colour_space value = class
 
     // methods
     oo_binary_table op x = [
-        // for Colour arithmetic, force x to this space
-        [this.Colour colour_space (op.fn this.value x'.value),
+        // for Colour arithmetic, force x to this space, then piecewise
+        [this.Colour colour_space (map_binaryl op.fn this.value x'.value),
             is_Colour x &&
             op.type == Operator_type.ARITHMETIC],
 
-        // for equality, must be Colour op Colour, transform other to this
+        // for equality, must be Colour op Colour, force x to this space
         [op.fn this.value x'.value,
             is_Colour x &&
             op.type == Operator_type.RELATIONAL &&
@@ -580,7 +580,8 @@ Colour colour_space value = class
 
     ] ++ super.oo_binary_table op x
     {
-        x' = colour_transform_to colour_space x;
+    interp = Interpretation.get_value colour_space;
+        x' = colour_transform_to interp x;
     }
 
     oo_unary_table op = [
@@ -697,6 +698,26 @@ Rect left top width height = class
             is_Rect x &&
             (op.op_name == "not_equal" || op.op_name == "not_equal'")],
 
+        // relational ops are includes_rect
+        [includes_rect x,
+            is_Rect x &&
+            op.type == Operator_type.RELATIONAL &&
+            op.op_name == "less_equal'"],
+        [includes_rect x && !equal x,
+            is_Rect x &&
+            op.type == Operator_type.RELATIONAL &&
+            op.op_name == "less'"],
+
+        // mul and add are intersect and union
+        [union x,
+            is_Rect x &&
+            op.type == Operator_type.ARITHMETIC &&
+            (op.op_name == "add" || op.op_name == "add'")],
+        [intersect x,
+            is_Rect x &&
+            op.type == Operator_type.ARITHMETIC &&
+            (op.op_name == "multiply" || op.op_name == "multiply'")],
+
         // binops with a complex are the same as (comp op comp)
         [oo_binary_function op this (Rect (re x) (im x) 0 0),
             is_complex x],
@@ -720,6 +741,43 @@ Rect left top width height = class
         width'' = op.fn width x';
         height'' = op.fn height x';
         x' = get_number x;
+
+        equal x = left == x.left && top == x.top &&
+              width == x.width && height == x.height;
+
+        // contains a rect? just test top left and bottom right points
+        includes_rect r
+            = includes_point r.left r.top &&
+                includes_point r.right r.bottom;
+
+        // bounding box of two rects
+        // if either is empty, can just return the other
+        union r
+            = r, is_empty
+            = this, r.is_empty
+            = Rect left' top' width' height'
+        {
+            left' = minpair left r.left;
+            top' = minpair top r.top;
+            width' = maxpair right r.right - left';
+            height' = maxpair bottom r.bottom - top';
+        }
+
+        // intersection of two rects ... empty rect if no intersection
+        intersect r
+            = Rect left' top' width'' height''
+        {
+            left' = maxpair left r.left;
+            top' = maxpair top r.top;
+            width' = minpair right r.right - left';
+            height' = minpair bottom r.bottom - top';
+            width''
+                = width', width > 0
+                = 0;
+            height''
+                = height', height > 0
+                = 0;
+        }
     }
 
     oo_unary_table op = [
@@ -742,62 +800,13 @@ Rect left top width height = class
     // empty? ie. contains no pixels
     is_empty = width == 0 || height == 0;
 
-    // normalised version, ie. make width/height +ve and flip the origin
-    nleft
-        = left + width, width < 0
-        = left;
-    ntop
-        = top + height, height < 0
-        = top;
-    nwidth = abs width;
-    nheight = abs height;
-    nright = nleft + nwidth;
-    nbottom = ntop + nheight;
-
-    equal x = left == x.left && top == x.top &&
-          width == x.width && height == x.height;
-
     // contains a point?
     includes_point x y
-        = nleft <= x && x <= nright && ntop <= y && y <= nbottom;
-
-    // contains a rect? just test top left and bottom right points
-    includes_rect r
-        = includes_point r.nleft r.ntop &&
-            includes_point r.nright r.nbottom;
-
-    // bounding box of two rects
-    // if either is empty, can just return the other
-    union r
-        = r, is_empty
-        = this, r.is_empty
-        = Rect left' top' width' height'
-    {
-        left' = minpair nleft r.nleft;
-        top' = minpair ntop r.ntop;
-        width' = maxpair nright r.nright - left';
-        height' = maxpair nbottom r.nbottom - top';
-    }
-
-    // intersection of two rects ... empty rect if no intersection
-    intersect r
-        = Rect left' top' width'' height''
-    {
-        left' = maxpair nleft r.nleft;
-        top' = maxpair ntop r.ntop;
-        width' = minpair nright r.nright - left';
-        height' = minpair nbottom r.nbottom - top';
-        width''
-            = width', width > 0
-            = 0;
-        height''
-            = height', height > 0
-            = 0;
-    }
+        = left <= x && x <= right && top <= y && y <= bottom;
 
     // expand/collapse by n pixels
     margin_adjust n
-        = Rect (left - n) (top - n) (width + 2 * n) (height + 2 * n);
+        = this.Rect (left - n) (top - n) (width + 2 * n) (height + 2 * n);
 }
 
 /* Values for Coding field in image.
