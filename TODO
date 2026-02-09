@@ -1,9 +1,6 @@
-- test mixed colourspaces
-
-
 - don't use Option_enum directly, instead use eg.
 
-	Interpretation.picker "sRGB"
+	Interpretation_3ary.picker "sRGB"
 
 - remove Table?
 
