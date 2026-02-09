@@ -1,16 +1,9 @@
+
 - don't use Option_enum directly, instead use eg.
 
 	Interpretation.picker "sRGB"
 
 - remove Table?
-
-- Matrix equal fails eg.:
-
-	Matrix [[1, 2], [3, 4]] + 1 == Matrix [[2, 3], [4, 5]]
-
-  implemented by pointer_equal it test value
-
-  need to implement in Matrix_base, just test value?
 
 - need test_stdenv
 

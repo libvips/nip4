@@ -1539,7 +1539,7 @@ Filter_drop_shadow_item = class
                     = (foldr1 bitwise_and @ bandsplit) (image.value != 0),
                 		transparent
                     = image_new [
-                        $interpretation => Image_interpretation.B_W,
+                        $interpretation => Interpretation.B_W,
                         $pixel => 255
                     ] image.width image.height;
                 mask' = embed 0 shadow_rect'.left shadow_rect'.top

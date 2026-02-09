@@ -3,7 +3,7 @@ Colour_new_item = class
 	Menupullright (_ "_New") (_ "make a patch of colour") {
 	Widget_colour_item = class
 		Menuaction (_ "_Colour") (_ "make a patch of colour") {
-		action = Colour_picker "Lab" [50,0,0];
+		action = Colour_picker "LAB" [50,0,0];
 	}
 
 	sep1 = Menuseparator;

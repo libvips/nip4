@@ -2,6 +2,12 @@
 
 - better worksapce error state handling
 
+### New menus
+
+- Colour now supports == and != -> bool
+- Colour arithmetic transforms to the same space
+- lots of small bugfixes
+
 ## 9.0.16 2026/02/01
 
 - add multiple defs support to program window

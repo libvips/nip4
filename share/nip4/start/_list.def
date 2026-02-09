@@ -290,7 +290,7 @@ scanl fn st a:x
  *
  * sort :: [*] -> [*]
  */
-sort l = sortc lesseq l;
+sort l = sortc less_equal l;
 
 /* sortc comp l: sort list l into order using a comparision function
  *

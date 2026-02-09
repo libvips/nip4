@@ -21,8 +21,7 @@ Image_new_item = class Menupullright "_New" "make new things" {
 			nheight = Expression "Image height (pixels)" 64;
 			nbands = Expression "Image bands" 1;
 			format_option = Option "Image format" format_names 0;
-			interpretation_option = Option_enum "Image interpretation"
-                Image_interpretation.interpretation_names "B_W";
+			interpretation_option = Interpretation.picker "B_W";
 			pixel = Expression "Pixel value" 0;
 
 			_result

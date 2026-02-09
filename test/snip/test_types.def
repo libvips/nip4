@@ -54,6 +54,26 @@ main = unit_test [
         "Matrix scalar add"],
     [Matrix [[1, 2], [3, 4]] + 1 == Matrix [[2, 3], [4, 5]],
         "Matrix equal"],
+    [Matrix [[1, 2], [3, 4]] ** -1 == Matrix [[-2, 1], [1.5, -0.5]],
+        "Matrix invert"],
+    [Matrix [[1, 2], [3, 4]] * Matrix [[2, 3], [4, 5]] ==
+        Matrix [[10, 13], [22, 29]],
+            "Matrix multiply"],
+
+    [(Colour "sRGB" [255, 255, 255]).value == [255, 255, 255],
+        "Colour construct"],
+    [(Colour "sRGB" [255, 255, 255] - 255).value == [0, 0, 0],
+        "Colour scalar subtract"],
+    [(Colour "sRGB" [255, 255, 255] - Vector [1, 2, 3]).value == [254, 253,252],
+        "Colour vector subtract"],
+    [(Colour "sRGB" [255, 255, 255] - Colour "sRGB" [1, 2, 3]).value ==
+        [254, 253, 252],
+            "Colour subtract"],
+    [Colour "sRGB" [255, 255, 255] - Colour "sRGB" [1, 2, 3] ==
+        Colour "sRGB" [254, 253, 252],
+            "Colour equal"],
+
+    // colour arithmetic isn't working?
 
     // add more!
 

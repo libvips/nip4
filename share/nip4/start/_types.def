@@ -315,7 +315,7 @@ Enum = class {
         = (remove_std @ remove_fn @ remove_under @ dir) x
     {
         remove_std = filter (not @ member [$this, $name, $super, x.name]);
-        remove_fn = filter (noteq "<function>" @ print @ converse get_member x);
+        remove_fn = filter (not_equal "<function>" @ print @ converse get_member x);
         remove_under = filter (not @ is_prefix "_");
     }
 
@@ -442,7 +442,7 @@ Matrix_base value = class
         // for equality, must be Matrix op Matrix, and only compare value
         [op.fn this.value x.value,
             is_Matrix x &&
-            (op.op_name == "noteq" || op.op_name == "noteq'" ||
+            (op.op_name == "not_equal" || op.op_name == "not_equal'" ||
              op.op_name == "equal" || op.op_name == "equal'")],
 
         [op.fn this.value x,
@@ -555,18 +555,33 @@ Colour colour_space value = class
     {
         interpretation = get_header "interpretation" im;
         bands = get_header "bands" im;
-        nip_interpretation =
-            Image_interpretation.colour_spaces.lookup 1 0 interpretation;
+        nip_interpretation = Interpretation.get_key interpretation;
     }
 
     // methods
     oo_binary_table op x = [
+        // for Colour arithmetic, force x to this space
+        [this.Colour colour_space (op.fn this.value x'.value),
+            is_Colour x &&
+            op.type == Operator_type.ARITHMETIC],
+
+        // for equality, must be Colour op Colour, transform other to this
+        [op.fn this.value x'.value,
+            is_Colour x &&
+            op.type == Operator_type.RELATIONAL &&
+            (op.op_name == "not_equal" || op.op_name == "not_equal'" ||
+             op.op_name == "equal" || op.op_name == "equal'")],
+
+        // otherwise go via image
         [itoc (op.fn
             ((float) (to_image this).value)
             ((float) (to_image x).value)),
-            // here REWRAP means go via image
             op.type == Operator_type.COMPOUND_REWRAP]
-    ] ++ super.oo_binary_table op x;
+
+    ] ++ super.oo_binary_table op x
+    {
+        x' = colour_transform_to colour_space x;
+    }
 
     oo_unary_table op = [
         [itoc (op.fn ((float) (to_image this).value)),
@@ -576,10 +591,10 @@ Colour colour_space value = class
 
 // a subclass with widgets for picking a space and value
 Colour_picker default_colour default_value = class
-    Colour space.item colour.expr {
+    Colour interp.key colour.expr {
     _vislevel = 3;
 
-    space = Interpretation_3ary.picker default_colour;
+    interp = Interpretation_3ary.picker default_colour;
     colour = Expression "Value" default_value;
 
     Colour_edit colour_space value =
@@ -680,7 +695,7 @@ Rect left top width height = class
             (op.op_name == "equal" || op.op_name == "equal'")],
         [!equal x,
             is_Rect x &&
-            (op.op_name == "noteq" || op.op_name == "noteq'")],
+            (op.op_name == "not_equal" || op.op_name == "not_equal'")],
 
         // binops with a complex are the same as (comp op comp)
         [oo_binary_function op this (Rect (re x) (im x) 0 0),
@@ -1255,7 +1270,7 @@ NULL = class
             op.op_name == "equal"],
         [this !== x,
             op.type == Operator_type.RELATIONAL &&
-            op.op_name == "noteq"]
+            op.op_name == "not_equal"]
     ] ++ super.oo_binary_table op x;
 }
 

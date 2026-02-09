@@ -29,7 +29,10 @@
 
 #include "nip4.h"
 
-/* Index with binop or uop. The names match the enums in vips8.
+/* Index with binop or uop.
+ *
+ * These names are passed into the .def oo system so can't be changed without
+ * breaking old workspaces.
  */
 const char *operator_table[] = {
     "none",                 /* BI_NONE */
@@ -38,8 +41,8 @@ const char *operator_table[] = {
     "remainder",            /* BI_REM */
     "power",                /* BI_POW */
     "subscript",            /* BI_SELECT */
-    "lshift",               /* BI_LSHIFT */
-    "rshift",               /* BI_RSHIFT */
+    "left_shift",           /* BI_LSHIFT */
+    "right_shift",          /* BI_RSHIFT */
     "divide",               /* BI_DIV */
     "join",                 /* BI_JOIN */
     "dot",                  /* BI_DOT */
@@ -51,11 +54,11 @@ const char *operator_table[] = {
     "bitwise_or",           /* BI_BOR */
     "eor",                  /* BI_EOR */
     "equal",                /* BI_EQ */
-    "noteq",                /* BI_NOTEQ */
+    "not_equal",            /* BI_NOTEQ */
     "pointer_equal",        /* BI_PEQ */
-    "pointer_noteq",        /* BI_PNOTEQ */
+    "pointer_not_equal",    /* BI_PNOTEQ */
     "less",                 /* BI_LESS */
-    "lesseq",               /* BI_LESSEQ */
+    "less_equal",           /* BI_LESSEQ */
     "if_then_else",         /* BI_IF */
     "cons",                 /* BI_CONS */
     "none",                 /* UN_NONE */

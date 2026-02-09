@@ -157,9 +157,9 @@ oo_binary_lookup op_name
             Operator_type.ARITHMETIC false,
         Operator "subscript" subscript
             Operator_type.ARITHMETIC false,
-        Operator "lshift" lshift
+        Operator "left_shift" left_shift
             Operator_type.ARITHMETIC false,
-        Operator "rshift" rshift
+        Operator "right_shift" right_shift
             Operator_type.ARITHMETIC false,
         Operator "divide" divide
             Operator_type.ARITHMETIC false,
@@ -183,11 +183,11 @@ oo_binary_lookup op_name
             Operator_type.ARITHMETIC false,
         Operator "equal" equal
             Operator_type.RELATIONAL true,
-        Operator "noteq" noteq
+        Operator "not_equal" not_equal
             Operator_type.RELATIONAL true,
         Operator "less" less
             Operator_type.RELATIONAL false,
-        Operator "lesseq" lesseq
+        Operator "less_equal" less_equal
             Operator_type.RELATIONAL false
     ];
 
@@ -290,8 +290,8 @@ oo_binary_function op a b
         op.symmetric && is_class b && matches4 != []
     = pointer_equal a b,
         op.op_name == "equal" || op.op_name == "equal'"
-    = pointer_noteq a b,
-        op.op_name == "noteq" || op.op_name == "noteq'"
+    = pointer_not_equal a b,
+        op.op_name == "not_equal" || op.op_name == "not_equal'"
     = error (_ "No method found for binary operator." ++ "\n" ++
         _ "left" ++ " = " ++ print a ++ "\n" ++
         _ "operator" ++ " = " ++ op.op_name ++ "\n" ++
@@ -322,8 +322,8 @@ oo_binary'_function op a b
     = matches2?0, op.symmetric && matches2 != []
     = pointer_equal a b,
         op.op_name == "equal" || op.op_name == "equal'"
-    = pointer_noteq a b,
-        op.op_name == "noteq" || op.op_name == "noteq'"
+    = pointer_not_equal a b,
+        op.op_name == "not_equal" || op.op_name == "not_equal'"
     = error (_ "No method found for binary operator." ++ "\n" ++
         _ "left" ++ " = " ++ print a ++ "\n" ++
         _ "operator" ++ " = " ++ op.op_name ++ "\n" ++

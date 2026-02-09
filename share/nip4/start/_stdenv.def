@@ -16,18 +16,18 @@ logical_or a b = a || b;
 bitwise_and a b = a & b;
 bitwise_or a b = a | b;
 eor a b = a ^ b;
-lshift a b = a << b;
-rshift a b = a >> b;
+left_shift a b = a << b;
+right_shift a b = a >> b;
 not a = !a;
 
 less a b = a < b;
+less_equal a b = a <= b;
 more a b = a > b;
-lesseq a b = a <= b;
-moreeq a b = a >= b;
+more_equal a b = a >= b;
 equal a b = a == b;
-noteq a b = a != b;
+not_equal a b = a != b;
 pointer_equal a b = a === b;
-pointer_noteq a b = a !== b;
+pointer_not_equal a b = a !== b;
 
 add a b = a + b;
 subtract a b = a - b;
@@ -97,15 +97,15 @@ vec op_name im vec
     = vips_relational_const [] im "equal" vec,
         op_name == "equal" || op_name == "equal'"
     = vips_relational_const [] im "noteq" vec,
-        op_name == "noteq" || op_name == "noteq'"
+        op_name == "not_equal" || op_name == "not_equal'"
     = vips_relational_const [] im "less" vec,
         op_name == "less"
-    = vips_relational_const [] im "moreeq" vec,
+    = vips_relational_const [] im "more" vec,
         op_name == "less'"
     = vips_relational_const [] im "lesseq" vec,
-        op_name == "lesseq"
-    = vips_relational_const [] im "more" vec,
-        op_name == "lesseq'"
+        op_name == "less_equal"
+    = vips_relational_const [] im "moreeq" vec,
+        op_name == "less_equal'"
     = error ("unimplemented vector operation: " ++ op_name)
 {
     zeros = replicate (len vec) 0;
@@ -311,7 +311,7 @@ meanze x
         sum = st.value?0?2;
 
         // find non-zero pixels (not zero in all bands)
-        zp = vec "noteq" i (replicate b 0);
+        zp = vec "not_equal" i (replicate b 0);
 
         // number of non-zero pixels
         N = b * (mean zp * w * h) / 255;
@@ -415,7 +415,7 @@ deviationze x
         sum2 = st.value?0?3;
 
         // find non-zero pixels (not zero in all bands)
-        zp = vec "noteq" i (replicate b 0);
+        zp = vec "not_equal" i (replicate b 0);
 
         // number of non-zero pixels
         N = b * (mean zp * w * h) / 255;
@@ -673,7 +673,7 @@ maxpos x
     {
         max_value = max (Matrix m);
         indexes = map (index (equal max_value)) m;
-        row = index (noteq (-1)) indexes;
+        row = index (not_equal (-1)) indexes;
     }
 
     maxpos_list [] = -1;
@@ -701,7 +701,7 @@ minpos x
     {
         min_value = min (Matrix m);
         indexes = map (index (equal min_value)) m;
-        row = index (noteq (-1)) indexes;
+        row = index (not_equal (-1)) indexes;
     }
 
     minpos_list [] = -1;
@@ -1025,7 +1025,7 @@ measure_draw across down measure image
 
      mask = Image (insertset bg.value patch.value x y);
 
-     image' = colour_transform_to Image_interpretation.sRGB image;
+     image' = colour_transform_to Interpretation.sRGB image;
 
      mark = if mask then Vector [0, 255, 0] else image';
 
@@ -1806,7 +1806,7 @@ print_base base in
         = reverse chars
     {
         digits = map (\x x % base)
-            (takewhile (noteq 0)
+            (takewhile (not_equal 0)
                 (iterate (\x idivide x base) in));
         chars = map tohd digits;
 
