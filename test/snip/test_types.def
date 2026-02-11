@@ -71,10 +71,16 @@ main = unit_test [
             "Colour subtract"],
     [Colour "sRGB" [255, 255, 255] - Colour "sRGB" [1, 2, 3] ==
         Colour "sRGB" [254, 253, 252],
-            "Colour equal"],
+            "equal Colour Colour"],
+    [Colour "sRGB" [27, 27, 27] == Colour "LAB" [10, 0, 0],
+            "equal Colour Colour, mixed spaces"],
     [Colour "sRGB" [255, 255, 255] - Colour "LAB" [10, 0, 0] ==
         Colour "sRGB" [228, 228, 228],
-            "Colour subtract, mixed spaces"],
+            "subtract Colour Colour, mixed spaces"],
+/*
+    [sample_image + Colour "LAB" [10, 0, 0] == Colour "sRGB" [28, 29, 30],
+            "add Colour Image, mixed spaces"],
+ */
 
     [!(Rect 10 20 30 40).is_empty, "Rect construct"],
     [Rect 10 20 30 40 == Rect 10 20 30 40, "Rect equal"],

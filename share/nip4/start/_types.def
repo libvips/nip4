@@ -563,28 +563,45 @@ Colour colour_space value = class
 
     // methods
     oo_binary_table op x = [
-        // for Colour arithmetic, force x to this space, then piecewise
-        [this.Colour colour_space (map_binaryl op.fn this.value x'.value),
-            is_Colour x &&
-            op.type == Operator_type.ARITHMETIC],
-
-        // for equality, must be Colour op Colour, force x to this space
+        // for equality, must be (op Colour Colour), transform x to this space
         [op.fn this.value x'.value,
             is_Colour x &&
             op.type == Operator_type.RELATIONAL &&
             (op.op_name == "not_equal" || op.op_name == "not_equal'" ||
              op.op_name == "equal" || op.op_name == "equal'")],
 
-        // otherwise go via image
+        // for (op Colour Image), transform this to x's interp, make
+        // a large const image
+        [op.fn const_image x,
+            is_Image x],
+
+        // arithmetic (op Colour thing) goes via image .. transform x to an
+        // image and then to this colour space
+        [this.Colour (op.fn
+            ((float) (to_image this).value)
+            ((float) (to_image x').value)),
+            op.type == Operator_type.ARITHMETIC],
+
+        // everything else ... transform x to this space, turn both into
+        // images, and run the function
         [itoc (op.fn
             ((float) (to_image this).value)
-            ((float) (to_image x).value)),
+            ((float) (to_image x').value)),
             op.type == Operator_type.COMPOUND_REWRAP]
 
     ] ++ super.oo_binary_table op x
     {
-    interp = Interpretation.get_value colour_space;
+        interp = Interpretation.get_value colour_space;
         x' = colour_transform_to interp x;
+
+        // make this into a const image that matches image x in size
+        this' = colour_transform_to x.interpretation this;
+        const_image = image_new_from_image [
+            $format => Format.FLOAT,
+            //$bands => 3,
+            //$coding => Coding.NOCODING,
+            $pixel => Vector this'.value
+        ] x.value x.width x.height;
     }
 
     oo_unary_table op = [
@@ -959,8 +976,10 @@ Image value = class
             op.op_name == "if_then_else"],
         [wrap (op.fn this.value (get_image x)),
             has_image x],
+        // (op Image Colour) is handled in the colour class, so be careful not
+        // to catch colour as a vector subtype
         [wrap (vec op.op_name this.value x.value),
-            is_Vector x],
+            is_Vector x && !is_Colour x],
         [wrap (op.fn this.value (get_number x)),
             has_number x],
         // if it's not a class on the RHS, handle here ... just apply and

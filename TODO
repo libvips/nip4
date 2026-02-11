@@ -1,3 +1,24 @@
+- try
+
+	Colour "sRGB" [255, 255, 255] - Colour "LAB" [10, 0, 0]
+
+  get
+
+	Colour "sRGB" [245, 255, 255]
+
+  x is not be transformed to this.interp
+
+- try
+
+	A1: 12
+	A2: [A1]
+
+  edit A1, A2 does not update
+
+- Image caption has an extra space
+
+	"k2.jpg,  1450x2048 uchar, ..."
+
 - reached Image in _types
 
 	maybe enough
