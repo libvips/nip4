@@ -105,7 +105,7 @@ https://github.com/libvips/build-win64-mxe
 Build with eg.:
 
 ```
-$ ./build.sh --target x86_64-w64-mingw32.shared --nightly nip4
+$ ./build.sh --target x86_64-w64-mingw32.shared nip4
 ```
 
 ## Build from source for flathub

@@ -16,114 +16,73 @@
     "cleanup" : [
         "/include",
 
-        "/lib/*.a",
+	"/bin/Magick++-config",
+	"/bin/MagickCore-config",
+	"/bin/MagickWand-config",
+	"/bin/animate",
+	"/bin/compare",
+	"/bin/composite",
+	"/bin/conjure",
+	"/bin/cookbook",
+	"/bin/dcm-dump",
+	"/bin/dcm-getframe",
+	"/bin/display",
+	"/bin/exr2aces",
+	"/bin/exrenvmap",
+	"/bin/exrheader",
+	"/bin/exrinfo",
+	"/bin/exrmakepreview",
+	"/bin/exrmaketiled",
+	"/bin/exrmanifest",
+	"/bin/exrmetrics",
+	"/bin/exrmultipart",
+	"/bin/exrmultiview",
+	"/bin/exrstdattr",
+	"/bin/fitscopy",
+	"/bin/fitsverify",
+	"/bin/fpack",
+	"/bin/funpack",
+	"/bin/identify",
+	"/bin/imcopy",
+	"/bin/import",
+	"/bin/libdeflate-gunzip",
+	"/bin/libdeflate-gzip",
+	"/bin/magick-script",
+	"/bin/mogrify",
+	"/bin/montage",
+	"/bin/ojph_compress",
+	"/bin/ojph_expand",
+	"/bin/openslide-quickhash1sum",
+	"/bin/openslide-show-properties",
+	"/bin/openslide-write-png",
+	"/bin/slidetool",
+	"/bin/smem",
+	"/bin/snip",
+	"/bin/speed",
+	"/bin/stream",
+	"/bin/vips",
+	"/bin/vipsedit",
+	"/bin/vipsheader",
+	"/bin/vipsthumbnail",
+
+        "/lib/lib*.a",
+        "/lib/lib*.la",
         "/lib/ImageMagick-*",
         "/lib/cmake",
         "/lib/girepository-1.0",
         "/lib/libMagick++-7*",
-        "/lib/libheif",
-        "/lib/openjpeg-*",
         "/lib/pkgconfig",
-
-        "/man",
 
         "/share/aclocal",
         "/share/doc",
         "/share/gir-1.0",
-        "/share/gtk-doc",
         "/share/man",
         "/share/pkgconfig",
         "/share/aclocal*",
-        "/share/autoconf*",
-        "/share/automake*",
-        "/share/info",
-        "/share/thumbnailers",
-        "/share/USING_HDF5_CMake.txt",
-        "/share/COPYING",
-        "/share/RELEASE.txt",
-        "/share/cmake",
-
-        "/bin/brotli",
-        "/bin/bsdcat",
-        "/bin/bsdcpio",
-        "/bin/bsdtar",
-        "/bin/bsdunzip",
-        "/bin/cookbook",
-        "/bin/dcm-dump",
-        "/bin/dcm-getframe",
-        "/bin/exr2aces",
-        "/bin/exrenvmap",
-        "/bin/exrheader",
-        "/bin/exrinfo",
-        "/bin/exrmakepreview",
-        "/bin/exrmaketiled",
-        "/bin/exrmanifest",
-        "/bin/exrmetrics",
-        "/bin/exrmultipart",
-        "/bin/exrmultiview",
-        "/bin/exrstdattr",
-        "/bin/fitscopy",
-        "/bin/fitsverify",
-        "/bin/imcopy",
-        "/bin/libdeflate-gunzip",
-        "/bin/libdeflate-gzip",
-        "/bin/openslide-quickhash1sum",
-        "/bin/openslide-show-properties",
-        "/bin/openslide-write-png",
-        "/bin/opj_compress",
-        "/bin/opj_decompress",
-        "/bin/opj_dump",
-        "/bin/slidetool",
-
-        "/bin/Magick*",
-        "/bin/animate",
-        "/bin/compare",
-        "/bin/composite",
-        "/bin/conjure",
-        "/bin/display",
-        "/bin/identify",
-        "/bin/import",
-        "/bin/magick-script",
-        "/bin/mogrify",
-        "/bin/montage",
-        "/bin/stream",
-
-        "/bin/fpack",
-        "/bin/funpack",
-        "/bin/smem",
-        "/bin/snip",
-        "/bin/speed",
-        "/bin/vips",
-        "/bin/vipsedit",
-        "/bin/vipsheader",
-        "/bin/vipsprofile",
-        "/bin/vipsthumbnail"
+        "/share/info"
 
     ],
     "modules" : [
-
-        {
-            "name" : "highway",
-            "builddir" : true,
-            "buildsystem" : "cmake-ninja",
-            "build-options" : {
-                "config-opts" : [
-                    "-DCMAKE_INSTALL_LIBDIR=lib",
-                    "-DBUILD_TESTING=OFF",
-                    "-DHWY_ENABLE_CONTRIB=OFF",
-                    "-DHWY_ENABLE_EXAMPLES=OFF",
-                    "-DHWY_ENABLE_TESTS=OFF"
-                ]
-            },
-            "sources" : [
-                {
-                    "type" : "git",
-                    "url" : "https://github.com/google/highway.git",
-                    "tag" : "1.3.0",
-                    "commit" : "ac0d5d297b13ab1b89f48484fc7911082d76a93f"
-                }
-            ]
-        },
 
         {
             "name" : "libdeflate",
@@ -140,34 +99,6 @@
                     "url" : "https://github.com/ebiggers/libdeflate.git",
                     "tag" : "v1.25",
                     "commit" : "c8c56a20f8f621e6a966b716b31f1dedab6a41e3"
-                }
-            ]
-        },
-
-        {
-            "name" : "libjxl",
-            "builddir" : true,
-            "buildsystem" : "cmake-ninja",
-            "build-options" : {
-                "config-opts" : [
-                    "-DCMAKE_INSTALL_LIBDIR=lib",
-                    "-DBUILD_TESTING=OFF",
-                    "-DJPEGXL_ENABLE_SKCMS=off",
-                    "-DJPEGXL_ENABLE_DOXYGEN=off",
-                    "-DJPEGXL_ENABLE_EXAMPLES=off",
-                    "-DJPEGXL_ENABLE_JNI=off",
-                    "-DJPEGXL_ENABLE_MANPAGES=off",
-                    "-DJPEGXL_ENABLE_OPENEXR=off",
-                    "-DJPEGXL_ENABLE_SJPEG=off",
-                    "-DJPEGXL_ENABLE_TOOLS=off"
-                ]
-            },
-            "sources" : [
-                {
-                    "type" : "git",
-                    "url" : "https://github.com/libjxl/libjxl.git",
-                    "tag" : "v0.11.1",
-                    "commit" : "794a5dcf0d54f9f0b20d288a12e87afb91d20dfc"
                 }
             ]
         },
@@ -192,46 +123,19 @@
         },
 
         {
-            "name" : "openjpeg",
-            "builddir" : true,
-            "buildsystem" : "cmake-ninja",
-            "build-options" : {
-                "config-opts" : [
-                    "-DCMAKE_INSTALL_LIBDIR=lib"
-                ]
-            },
-            "sources" : [
-                {
-                    "type" : "git",
-                    "url" : "https://github.com/uclouvain/openjpeg.git",
-                    "tag" : "v2.5.4",
-                    "commit" : "6c4a29b00211eb0430fa0e5e890f1ce5c80f409f"
-                }
-            ]
-        },
-
-        {
             "name" : "libimagequant",
             "builddir" : true,
-            "buildsystem" : "cmake-ninja",
-            "build-options" : {
-                "config-opts" : [
-                    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
-                    "-DCMAKE_INSTALL_LIBDIR=lib"
-                ],
-                "arch" : {
-                    "aarch64" : {
-                        "config-opts" : [
-                            "-DBUILD_WITH_SSE=NO"
-                        ]
-                    }
-                }
-            },
+            "buildsystem" : "meson",
+            "config-opts" : [
+                "--libdir=lib",
+                "--buildtype=release"
+            ],
             "sources" : [
                 {
                     "type" : "git",
-                    "url" : "https://github.com/ImageOptim/libimagequant.git",
-                    "tag" : "2.15.1"
+                    "url" : "https://github.com/lovell/libimagequant.git",
+                    "tag" : "v2.4.1",
+                    "commit" : "4e82d9492db228a7a2057c442f7a6eb40508a0eb"
                 }
             ]
         },
@@ -486,7 +390,8 @@
                 {
                     "type" : "git",
                     "url" : "https://github.com/ImageMagick/ImageMagick",
-                    "tag" : "7.1.2-13"
+                    "tag" : "7.1.2-13",
+                    "commit" : "dd991e286b96918917a3392d6dc3ffc0e6907a4e"
                 }
             ]
         },
@@ -504,7 +409,8 @@
                 {
                     "type" : "git",
                     "url" : "https://github.com/libvips/libvips.git",
-                    "tag" : "v8.18.0"
+                    "tag" : "v8.18.0",
+                    "commit" : "36fe7461e07f71107a9108e5778eec81ce00fe73"
                 }
             ]
         },

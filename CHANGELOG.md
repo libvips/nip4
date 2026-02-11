@@ -1,6 +1,6 @@
 ## main
 
-- better worksapce error state handling
+- better workspace error state handling
 
 ### New menus
 
