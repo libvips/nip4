@@ -564,7 +564,7 @@ Colour colour_space value = class
     // methods
     oo_binary_table op x = [
         // for equality, must be (op Colour Colour), transform x to this space
-        [op.fn this.value x'.value,
+        [op.fn this.value x_colour.value,
             is_Colour x &&
             op.type == Operator_type.RELATIONAL &&
             (op.op_name == "not_equal" || op.op_name == "not_equal'" ||
@@ -579,21 +579,25 @@ Colour colour_space value = class
         // image and then to this colour space
         [itoc (op.fn
             ((float) (to_image this).value)
-            ((float) x'.value)),
+            ((float) x_image.value)),
             op.type == Operator_type.ARITHMETIC],
 
         // everything else ... transform x to this space, turn both into
         // images, and run the function
         [itoc (op.fn
             ((float) (to_image this).value)
-            ((float) x'.value)),
+            ((float) x_image.value)),
             op.type == Operator_type.COMPOUND_REWRAP]
 
     ] ++ super.oo_binary_table op x
     {
-	// transform x to image of the correct interp
         interp = Interpretation.get_value colour_space;
-        x' = colour_transform_to interp (to_image x);
+
+	// x is a Colour, transform to our interp
+        x_colour = colour_transform_to interp x;
+
+	// x is anything else, transform to image in this colour space
+        x_image = colour_transform_to interp (to_image x);
 
         // make this into a const image that matches image x in size
         this' = colour_transform_to x.interpretation this;
