@@ -1,3 +1,36 @@
+- libvips bug:
+
+	$ vipsheader x.v
+	x.v: 1x1 double, 3 bands, multiband
+	$ vips colourspace x.v x2.v srgb
+	$ vipsheader x2.v
+	x2.v: 1x1 uchar, 3 bands, multiband
+
+  should change the interpretation (probably?)
+
+  vipsdisp gets confused by x.v, though nip4 seems fine
+
+- try:
+
+	Colour "sRGB" [255, 255, 255] - Vector [1, 2, 3]
+
+  get:
+
+	subtract: not one band or 5 bands
+
+  to_image (Vector [1, 2, 3]) makes a MATRIX image, which then becomes 1 band
+  plus two alpha
+
+	make a three band matrix image, run colourspace, get a five band image
+
+  try multiband three band image, colourspace dos nothing (get multiband
+  output)
+
+  better to make "to_image (Vector x)" tag images as B_W, sRGB, multiband
+
+  vips_image_guess_interpretation (3 band Matrix) returns Matrix
+
+
 - try:
 
     A1: scale
@@ -5,27 +38,13 @@
 
   drag scale, A2 does not update
 
+  we have a local of a top-level making the dependency ... when we do the
+  top level resolve outwards we should make the top links
+
 - support BMP drag/drop to help windows
 
 - scroll is very slow in macOS, so navigating the Magick menu with no
   scrollbar is painful
-
-- try
-
-	Colour "sRGB" [255, 255, 255] - Colour "LAB" [10, 0, 0]
-
-  get
-
-	Colour "sRGB" [245, 255, 255]
-
-  x is not be transformed to this.interp
-
-- try
-
-	A1: 12
-	A2: [A1]
-
-  edit A1, A2 does not update
 
 - Image caption has an extra space
 

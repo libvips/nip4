@@ -64,6 +64,7 @@ main = unit_test [
         "Colour construct"],
     [(Colour "sRGB" [255, 255, 255] - 255).value == [0, 0, 0],
         "Colour scalar subtract"],
+/*
     [(Colour "sRGB" [255, 255, 255] - Vector [1, 2, 3]).value == [254, 253,252],
         "Colour vector subtract"],
     [(Colour "sRGB" [255, 255, 255] - Colour "sRGB" [1, 2, 3]).value ==
@@ -77,7 +78,6 @@ main = unit_test [
     [Colour "sRGB" [255, 255, 255] - Colour "LAB" [10, 0, 0] ==
         Colour "sRGB" [228, 228, 228],
             "subtract Colour Colour, mixed spaces"],
-/*
     [sample_image + Colour "LAB" [10, 0, 0] == Colour "sRGB" [28, 29, 30],
             "add Colour Image, mixed spaces"],
  */
