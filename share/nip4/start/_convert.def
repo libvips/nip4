@@ -77,17 +77,26 @@ to_image x
 
     // [[real]] -> image
     mtoi m
-        = im_mask2vips (Matrix m), width != 3
-        = joinup (im_mask2vips (Matrix m))
+        = (make_colour @ make_image) m
     {
         width = len m?0;
         height = len m;
-        joinup i
-            = b1 ++ b2 ++ b3
+
+        make_image = vips_image_from_matrix @ Matrix;
+
+        // width 3 becomes sRGB
+        make_colour im
+            = copy [$interpretation => Interpretation.sRGB] (joinup im),
+                width == 3
+            = im
         {
-            b1 = crop 0 0 1 height i;
-            b2 = crop 1 0 1 height i;
-            b3 = crop 2 0 1 height i;
+            joinup i
+                = b1 ++ b2 ++ b3
+            {
+                b1 = crop 0 0 1 height i;
+                b2 = crop 1 0 1 height i;
+                b3 = crop 2 0 1 height i;
+            }
         }
     }
 }

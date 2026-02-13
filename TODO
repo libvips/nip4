@@ -1,3 +1,10 @@
+- try
+
+	Colour "sRGB" [255, 255, 255] - Colour "sRGB" [1, 2, 3] ==
+		Colour "sRGB" [254, 253, 252]
+
+
+
 - libvips bug:
 
 	$ vipsheader x.v
@@ -9,27 +16,6 @@
   should change the interpretation (probably?)
 
   vipsdisp gets confused by x.v, though nip4 seems fine
-
-- try:
-
-	Colour "sRGB" [255, 255, 255] - Vector [1, 2, 3]
-
-  get:
-
-	subtract: not one band or 5 bands
-
-  to_image (Vector [1, 2, 3]) makes a MATRIX image, which then becomes 1 band
-  plus two alpha
-
-	make a three band matrix image, run colourspace, get a five band image
-
-  try multiband three band image, colourspace dos nothing (get multiband
-  output)
-
-  better to make "to_image (Vector x)" tag images as B_W, sRGB, multiband
-
-  vips_image_guess_interpretation (3 band Matrix) returns Matrix
-
 
 - try:
 

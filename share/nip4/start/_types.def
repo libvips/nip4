@@ -593,7 +593,7 @@ Colour colour_space value = class
     {
 	// transform x to image of the correct interp
         interp = Interpretation.get_value colour_space;
-        x' = colour_transform_to interp (to_image (to_colour x));
+        x' = colour_transform_to interp (to_image x);
 
         // make this into a const image that matches image x in size
         this' = colour_transform_to x.interpretation this;

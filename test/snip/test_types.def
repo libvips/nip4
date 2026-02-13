@@ -64,15 +64,16 @@ main = unit_test [
         "Colour construct"],
     [(Colour "sRGB" [255, 255, 255] - 255).value == [0, 0, 0],
         "Colour scalar subtract"],
-/*
     [(Colour "sRGB" [255, 255, 255] - Vector [1, 2, 3]).value == [254, 253,252],
         "Colour vector subtract"],
+
     [(Colour "sRGB" [255, 255, 255] - Colour "sRGB" [1, 2, 3]).value ==
         [254, 253, 252],
             "Colour subtract"],
     [Colour "sRGB" [255, 255, 255] - Colour "sRGB" [1, 2, 3] ==
         Colour "sRGB" [254, 253, 252],
             "equal Colour Colour"],
+/*
     [Colour "sRGB" [27, 27, 27] == Colour "LAB" [10, 0, 0],
             "equal Colour Colour, mixed spaces"],
     [Colour "sRGB" [255, 255, 255] - Colour "LAB" [10, 0, 0] ==
