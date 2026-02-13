@@ -77,8 +77,8 @@ main = unit_test [
     [Colour "sRGB" [255, 255, 255] - Colour "LAB" [10, 0, 0] ==
         Colour "sRGB" [228, 228, 228],
             "subtract Colour Colour, mixed spaces"],
-
-    [sample_image + Colour "LAB" [10, 0, 0] == Colour "sRGB" [28, 29, 30],
+    [to_colour (sample_image + Colour "LAB" [10, 0, 0])
+	== Colour "sRGB" [28, 29, 30],
             "add Colour Image, mixed spaces"],
 
     [!(Rect 10 20 30 40).is_empty, "Rect construct"],

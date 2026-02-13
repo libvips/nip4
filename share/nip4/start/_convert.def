@@ -133,7 +133,7 @@ to_colour x
     toc x
         = Colour (colour_space (get_interpretation x''))
             (map mean (bandsplit (get_image x''))),
-            has_image x && has_interpretation x
+            has_image x
         = Colour "sRGB" [x, x, x], is_real x    // since Colour can't do mono
         = Colour "sRGB" x, is_real_list x && is_list_len 3 x
         = map toc x, is_matrix x
@@ -148,12 +148,11 @@ to_colour x
             = x';
     }
 
-    colour_space interpretation
-        = Interpretation_3ary.get_key interpretation,
-            Interpretation_3ary.has_key interpretation
+    colour_space interp
+        = Interpretation_3ary.get_key interp,
+            Interpretation_3ary.has_value interp
         = error (_ "unable to make Colour from " ++
-                    Interpretation.get_name interpretation ++
-                    _ " image");
+                    Interpretation.get_name interp _ " image");
 }
 
 /* Try to make a real. (not a Real!)

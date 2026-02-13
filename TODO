@@ -1,15 +1,3 @@
-- try
-
-	A1: Colour "sRGB" [1, 2, 3]
-	A2: to_image A1
-	A2: A2 + Colour "LAB" [10, 0, 0]
-		cannot convert Colour "LAB" [10, 0, 0] to GValue
-
-	A2: Colour "sRGB" [28, 29, 30],
-	A3: A1 == A2
-		false
-
-  (Image + Colour) should not be handled by the Image class
 
 - libvips bug:
 

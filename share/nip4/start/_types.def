@@ -593,19 +593,20 @@ Colour colour_space value = class
     {
         interp = Interpretation.get_value colour_space;
 
-	// x is a Colour, transform to our interp
+        // x is a Colour, transform to our interp
         x_colour = colour_transform_to interp x;
 
-	// x is anything else, transform to image in this colour space
+        // x is anything else, transform to image in this colour space
         x_image = colour_transform_to interp (to_image x);
 
-        // make this into a const image that matches image x in size
-        this' = colour_transform_to x.interpretation this;
+        // make this into a const image that matches image x in size and
+        // colourspace
+        this_x_interp = colour_transform_to x.interpretation this;
         const_image = image_new_from_image [
             $format => Format.FLOAT,
-            //$bands => 3,
-            //$coding => Coding.NOCODING,
-            $pixel => Vector this'.value
+            $bands => 3,
+            $coding => Coding.NOCODING,
+            $pixel => scope.Vector this_x_interp.value
         ] x.value x.width x.height;
     }
 
