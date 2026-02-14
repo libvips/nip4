@@ -550,63 +550,50 @@ Colour colour_space value = class
     // to a vector if bands > 1
     // to a number otherwise
     itoc im
-        = this.Colour nip_interpretation (to_matrix im).value?0,
+        = this.Colour colour_space (to_matrix im).value?0,
             bands == 3
         = scope.Vector (map mean (bandsplit im)),
             bands > 1
         = mean im
     {
-        interpretation = get_header "interpretation" im;
-        bands = get_header "bands" im;
-        nip_interpretation = Interpretation.get_key interpretation;
+        interp = get_interpretation im;
+        bands = get_bands im;
+        colour_space = Interpretation.get_key interp;
     }
 
     // methods
     oo_binary_table op x = [
-        // for equality, must be (op Colour Colour), transform x to this space
-        [op.fn this.value x_colour.value,
+        // for equality, must be (op Colour Colour) ... for consistency with
+        // Image, don't transform spaces to match
+        [op.fn this.value x.value,
             is_Colour x &&
             op.type == Operator_type.RELATIONAL &&
             (op.op_name == "not_equal" || op.op_name == "not_equal'" ||
              op.op_name == "equal" || op.op_name == "equal'")],
 
-        // for (op Colour Image), transform this to x's interp, make
-        // a large const image
-        [op.fn const_image x,
+        // for (op Colour Image), transform this to a large image
+        [op.fn this_image x,
             is_Image x],
 
-        // arithmetic (op Colour thing) goes via image .. transform x to an
-        // image and then to this colour space
+        // everything else (op Colour thing) becomes a 1x1 pixel image and
+        // gets rewrapped
         [itoc (op.fn
             ((float) (to_image this).value)
-            ((float) x_image.value)),
-            op.type == Operator_type.ARITHMETIC],
-
-        // everything else ... transform x to this space, turn both into
-        // images, and run the function
-        [itoc (op.fn
-            ((float) (to_image this).value)
-            ((float) x_image.value)),
+            ((float) (to_image x).value)),
+            op.type == Operator_type.ARITHMETIC ||
             op.type == Operator_type.COMPOUND_REWRAP]
 
     ] ++ super.oo_binary_table op x
     {
-        interp = Interpretation.get_value colour_space;
-
-        // x is a Colour, transform to our interp
-        x_colour = colour_transform_to interp x;
-
-        // x is anything else, transform to image in this colour space
-        x_image = colour_transform_to interp (to_image x);
-
-        // make this into a const image that matches image x in size and
-        // colourspace
-        this_x_interp = colour_transform_to x.interpretation this;
-        const_image = image_new_from_image [
+        // make this into a const image that matches image x in size
+        // don't transform the colourspace to match x for consistency with
+        // Image
+        this_image = image_new_from_image [
+            $interpretation => Interpretation.get_value colour_space,
             $format => Format.FLOAT,
             $bands => 3,
             $coding => Coding.NOCODING,
-            $pixel => scope.Vector this_x_interp.value
+            $pixel => scope.Vector this.value
         ] x.value x.width x.height;
     }
 
