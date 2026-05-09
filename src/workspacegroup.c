@@ -259,7 +259,7 @@ workspacegroup_rename_workspace_node(Workspacegroup *wsg,
 	if (!get_sprop(xws, "name", name, MAX_STRSIZE))
 		return;
 
-	strcpy(new_name, name);
+	g_strlcpy(new_name, name, MAX_STRSIZE);
 	while (compile_lookup(wsr->sym->expr->compile, new_name) ||
 		model_loadstate_taken(state, new_name))
 		increment_name(new_name);

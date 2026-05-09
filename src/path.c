@@ -144,7 +144,7 @@ path_rewrite_add(const char *old, const char *new, gboolean lock)
 	 * If we keep all @old paths in long form we can avoid rewrite loops.
 	 */
 	g_strlcpy(old_buf, old, VIPS_PATH_MAX);
-	strcat(old_buf, G_DIR_SEPARATOR_S);
+	g_strlcat(old_buf, G_DIR_SEPARATOR_S, sizeof(old_buf));
 	path_expand(old_buf);
 	old = old_buf;
 
@@ -153,7 +153,7 @@ path_rewrite_add(const char *old, const char *new, gboolean lock)
 		 * obviously.
 		 */
 		g_strlcpy(new_buf, new, VIPS_PATH_MAX);
-		strcat(new_buf, G_DIR_SEPARATOR_S);
+		g_strlcat(new_buf, G_DIR_SEPARATOR_S, sizeof(new_buf));
 		new = new_buf;
 	}
 
@@ -334,10 +334,13 @@ path_add_component(const char *str, int c)
 static char *
 path_add_string(const char *str, char *buf)
 {
-	strcpy(buf, str);
-	strcat(buf, G_SEARCHPATH_SEPARATOR_S);
+	size_t len = strlen(str);
 
-	return buf + strlen(buf);
+	memcpy(buf, str, len);
+	buf[len] = *G_SEARCHPATH_SEPARATOR_S;
+	buf[len + 1] = '\0';
+
+	return buf + len + 1;
 }
 
 /* Turn a list of directory names into a search path.
