@@ -1823,13 +1823,18 @@ copy_node(Heap *heap, HeapNode *ri[], HeapNode *hn, PElement *out)
 }
 
 /* Copy a compiled graph into the main reduce space. Overwrite the node at
- * out.
+ * out. Compile must be a top-level, we also copy all locals and do any
+ * linking.
  */
 gboolean
 heap_copy(Heap *heap, Compile *compile, PElement *out)
 {
 	Element *base = &compile->base;
-	HeapNode *ri[MAX_RELOC];
+
+	/* The new value of each local after the copy ... could be eg. a boxed
+	 * constant or a pointer to a node.
+	 */
+	Element *relocate[MAX_RELOC];
 
 #ifdef DEBUG
 	printf("heap_copy: ");
@@ -1837,46 +1842,48 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 	printf("\n");
 #endif /*DEBUG*/
 
-	switch (base->type) {
-	case ELEMENT_NODE:
-		/* Need a tree copy.
-		 */
-		if (!copy_node(heap, &ri[0], (HeapNode *) base->ele, out))
-			return FALSE;
-		break;
+	g_assert(is_top(compile->sym));
 
-	case ELEMENT_SYMBOL:
-	case ELEMENT_CHAR:
-	case ELEMENT_BOOL:
-	case ELEMENT_BINOP:
-	case ELEMENT_SYMREF:
-	case ELEMENT_COMPILEREF:
-	case ELEMENT_CONSTRUCTOR:
-	case ELEMENT_UNOP:
-	case ELEMENT_COMB:
-	case ELEMENT_TAG:
-	case ELEMENT_ELIST:
-	case ELEMENT_MANAGED:
-		/* Copy value.
-		 */
-		PEPUTP(out, base->type, base->ele);
-		break;
-
-	case ELEMENT_NOVAL:
-		/* Not yet compiled ... eg. perhaps argv.
-		 */
+	/* Not yet compiled ... eg. perhaps argv.
+	 */
+	if (base->type == ELEMENT_NOVAL) {
 		if (compile_object(compile) ||
 			base->type == ELEMENT_NOVAL)
 			return FALSE;
-
-		if (!heap_copy(heap, compile, out))
-			return FALSE;
-
-		break;
-
-	default:
-		g_assert(FALSE);
 	}
+
+	/* Copy this def and all locals, building the relocation table.
+	 */
+	int n_reloc = 0;
+	if (heap_copy_locals(heap, compile, relocate, &n_reloc)) {
+		for (int i = 0; i < n_reloc; i++)
+			heap_unregister_element(heap, &relocate[i]);
+
+		return FALSE;
+	}
+
+	/* Walk every copy, patching all relocations.
+	 */
+	for (int j = 0; j < n_reloc; j++) {
+		if (heap_relocate(&relocate[j], ri, n_reloc)) {
+			for (int i = 0; i < n_reloc; i++)
+				heap_unregister_element(heap, &relocate[i]);
+
+			return FALSE;
+		}
+	}
+
+	/* The root should now only contain refs to other top-levels.
+	 */
+#ifdef DEBUG
+#endif /*DEBUG*/
+	if (heap_check_no_locals(ri[0]))
+		return FALSE;
+
+	PEPUTP(out, ELEMENT_NODE, ri[0]);
+
+	for (int i = 0; i < n_reloc; i++)
+		heap_unregister_element(heap, &relocate[i]);
 
 	return TRUE;
 }
