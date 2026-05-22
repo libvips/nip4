@@ -507,7 +507,7 @@ heap_clear(Heap *heap, NodeFlags clearmask)
 }
 
 /* Allocate a new serial number for a heap. On return, we guarantee that
- * heap->serial is a value not used by any nodes in the heap.
+ * heap->serial is a value not used by any node in the heap.
  */
 int
 heap_serial_new(Heap *heap)
@@ -1722,7 +1722,7 @@ heap_reduce_strict(PElement *base)
  * Have to be careful to copy sym pointers in nodes from compile heap.
  */
 static gboolean
-copy_node(Heap *heap, HeapNode *ri[], HeapNode *hn, PElement *out)
+heap_copy_node(Heap *heap, HeapNode *ri[], HeapNode *hn, PElement *out)
 {
 	HeapNode *hn1;
 	PElement pleft, pright;
@@ -1775,12 +1775,11 @@ copy_node(Heap *heap, HeapNode *ri[], HeapNode *hn, PElement *out)
 		PEPUTP(out, ELEMENT_NODE, hn1);
 	}
 
-	/* If it's a DOUBLE, no more to do.
-	 */
-	if (hn->type == TAG_DOUBLE)
-		return TRUE;
-
-	if (hn->ltype != ELEMENT_NODE && hn->rtype == ELEMENT_NODE) {
+	if (hn->type == TAG_DOUBLE) {
+		// nothing to do
+		;
+	}
+	else if (hn->ltype != ELEMENT_NODE && hn->rtype == ELEMENT_NODE) {
 		/* Right pointer only. Zap pointer so we can GC
 		 * safely.
 		 */
@@ -1789,7 +1788,7 @@ copy_node(Heap *heap, HeapNode *ri[], HeapNode *hn, PElement *out)
 		/* Recurse for RHS of node.
 		 */
 		PEPOINTRIGHT(hn1, &pright);
-		if (!copy_node(heap, ri, GETRIGHT(hn), &pright))
+		if (!heap_copy_node(heap, ri, GETRIGHT(hn), &pright))
 			return FALSE;
 	}
 	else if (hn->ltype == ELEMENT_NODE && hn->rtype != ELEMENT_NODE) {
@@ -1801,7 +1800,7 @@ copy_node(Heap *heap, HeapNode *ri[], HeapNode *hn, PElement *out)
 		/* Recurse for LHS of node.
 		 */
 		PEPOINTLEFT(hn1, &pleft);
-		if (!copy_node(heap, ri, GETLEFT(hn), &pleft))
+		if (!heap_copy_node(heap, ri, GETLEFT(hn), &pleft))
 			return FALSE;
 	}
 	else if (hn->ltype == ELEMENT_NODE && hn->rtype == ELEMENT_NODE) {
@@ -1814,12 +1813,176 @@ copy_node(Heap *heap, HeapNode *ri[], HeapNode *hn, PElement *out)
 		 */
 		PEPOINTLEFT(hn1, &pleft);
 		PEPOINTRIGHT(hn1, &pright);
-		if (!copy_node(heap, ri, GETLEFT(hn), &pleft) ||
-			!copy_node(heap, ri, GETRIGHT(hn), &pright))
+		if (!heap_copy_node(heap, ri, GETLEFT(hn), &pleft) ||
+			!heap_copy_node(heap, ri, GETRIGHT(hn), &pright))
 			return FALSE;
 	}
 
 	return TRUE;
+}
+
+/* State during copy of code to main heap.
+ */
+typedef struct _CopyState {
+	Heap *heap;
+
+	/* All the locals we have copied.
+	 */
+	Compile *compile[MAX_RELOC];
+
+	/* The new value of each local after the copy ... could be eg. a boxed
+	 * constant or a pointer to a node in the heap.
+	 */
+	Element relocate[MAX_RELOC];
+
+	int n_reloc;
+
+	int serial;
+} CopyState;
+
+static void
+heap_copy_state_init(CopyState *state)
+{
+	state->n_reloc = 0;
+	state->serial = heap_serial_new(heap);
+}
+
+static void
+heap_copy_state_free(CopyState *state)
+{
+	for (int i = 0; i < state->n_reloc; i++)
+		heap_unregister_element(state->heap, &state->relocate[i]);
+
+	state->n_reloc = 0;
+}
+
+static gboolean
+heap_copy_state_alloc(CopyState *state, Compile *compile, PElement *out)
+{
+	if (state->n_reloc >= MAX_RELOC) {
+		error_top(_("Too many relocations"));
+		error_sub(_("raise MAX_RELOC"));
+
+		return FALSE;
+	}
+
+	PEPOINTE(out, &state->relocate[state->n_reloc]);
+	PEPUTP(out, ELEMENT_NOVAL, 0);
+	heap_register_element(heap, &state->relocate[state->n_reloc]);
+	state->compile[state->n_reloc] = compile;
+	state->n_reloc += 1;
+
+	return TRUE;
+}
+
+static void
+heap_copy_state_patch(CopyState *state, PElement *pe)
+{
+	g_assert(PEISSYMBOL(pe));
+	Symbol *sym = PEGETSYMBOL(pe);
+
+	for (int i = 0; i < state->n_reloc; i++)
+		if (state->compile[i]->sym == sym) {
+			PEPUTE(pe, &state->relocate[i]);
+			break;
+		}
+}
+
+static void *
+heap_copy_locals(Compile *compile, void *a, void *b)
+{
+	CopyState *state = (CopyState *) a;
+	Element *base = &state->compile->base;
+
+	PElement out;
+	HeapNode *ri[MAX_RELOC];
+
+	if (!copy_state_alloc(state, compile, &out))
+		return compile;
+
+	switch (base->type) {
+	case ELEMENT_NODE:
+		if (!heap_copy_node(heap, ri, (HeapNode *) base->ele, &out))
+			return FALSE;
+		break;
+
+	case ELEMENT_SYMBOL:
+		PEPUTP(&out, base->type, base->ele);
+		break;
+
+	case ELEMENT_CHAR:
+	case ELEMENT_BOOL:
+	case ELEMENT_BINOP:
+	case ELEMENT_SYMREF:
+	case ELEMENT_COMPILEREF:
+	case ELEMENT_CONSTRUCTOR:
+	case ELEMENT_UNOP:
+	case ELEMENT_COMB:
+	case ELEMENT_TAG:
+	case ELEMENT_ELIST:
+	case ELEMENT_MANAGED:
+		PEPUTP(&out, base->type, base->ele);
+		break;
+
+	default:
+		g_assert(FALSE);
+	}
+
+	return icontainer_map(ICONTAINER(compile), heap_copy_locals, state, NULL))
+}
+
+static void
+heap_patch_node(CopyState *state, HeapNode *hn)
+{
+	// we can have loops and shared nodes
+	if ((hn->flgs & FLAG_SERIAL) == state->serial)
+		return;
+	SETSERIAL(hn->flgs, state->serial);
+
+	/* This can potentially recurse a lot.
+	 */
+	if (main_is_stack_full())
+		return FALSE;
+
+	if (hn->type != TAG_DOUBLE) {
+		PElement pe;
+
+		PEPOINTLEFT(hn, &pe);
+		heap_patch(state, &pe);
+
+		PEPOINTRIGHT(hn, &pe);
+		heap_patch(state, &pe);
+	}
+}
+
+static gboolean
+heap_patch(CopyState *state, PElement *pe)
+{
+	switch (PEGETTYPE(pe)) {
+	case ELEMENT_NODE:
+		heap_patch_node(state, PEGETVAL(pe));
+		break;
+
+	case ELEMENT_SYMBOL:
+		heap_copy_state_patch(state, pe);
+		break;
+
+	case ELEMENT_CHAR:
+	case ELEMENT_BOOL:
+	case ELEMENT_BINOP:
+	case ELEMENT_SYMREF:
+	case ELEMENT_COMPILEREF:
+	case ELEMENT_CONSTRUCTOR:
+	case ELEMENT_UNOP:
+	case ELEMENT_COMB:
+	case ELEMENT_TAG:
+	case ELEMENT_ELIST:
+	case ELEMENT_MANAGED:
+		break;
+
+	default:
+		g_assert(FALSE);
+	}
 }
 
 /* Copy a compiled graph into the main reduce space. Overwrite the node at
@@ -1831,9 +1994,8 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 {
 	Element *base = &compile->base;
 
-	/* The new value of each local after the copy ... could be eg. a boxed
-	 * constant or a pointer to a node.
-	 */
+	CopyState state;
+
 	Element *relocate[MAX_RELOC];
 
 #ifdef DEBUG
@@ -1854,36 +2016,34 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 
 	/* Copy this def and all locals, building the relocation table.
 	 */
-	int n_reloc = 0;
-	if (heap_copy_locals(heap, compile, relocate, &n_reloc)) {
-		for (int i = 0; i < n_reloc; i++)
-			heap_unregister_element(heap, &relocate[i]);
-
+	heap_copy_state_init(&state);
+	if (heap_copy_locals(heap, &state)) {
+		heap_copy_state_free(state);
 		return FALSE;
 	}
 
 	/* Walk every copy, patching all relocations.
 	 */
-	for (int j = 0; j < n_reloc; j++) {
-		if (heap_relocate(&relocate[j], ri, n_reloc)) {
-			for (int i = 0; i < n_reloc; i++)
-				heap_unregister_element(heap, &relocate[i]);
+	for (int i = 0; i < state.n_reloc; i++) {
+		PElement base;
 
-			return FALSE;
-		}
+		PEPOINTE(&base, &state.relocate[i]);
+		heap_patch(&state, &base);
 	}
+
+	PElement new;
+	PEPOINTE(&new, &state.relocate[0]);
 
 	/* The root should now only contain refs to other top-levels.
 	 */
 #ifdef DEBUG
+	printf("heap_copy:\n");
+	pgraph(&new)
 #endif /*DEBUG*/
-	if (heap_check_no_locals(ri[0]))
-		return FALSE;
 
-	PEPUTP(out, ELEMENT_NODE, ri[0]);
+	PEPUTPE(out, &new);
 
-	for (int i = 0; i < n_reloc; i++)
-		heap_unregister_element(heap, &relocate[i]);
+	heap_copy_state_free(state);
 
 	return TRUE;
 }
