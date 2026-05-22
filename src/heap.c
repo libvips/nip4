@@ -28,8 +28,8 @@
  */
 
 /*
-#define DEBUG
  */
+#define DEBUG
 
 /* GC on every alloc too! Extraordinarily slow. Turn on DEBUG_HEAP in nip4.h
  * first. Good for spotting heap pointer errors.
@@ -1890,8 +1890,14 @@ heap_copy_state_patch(CopyState *state, PElement *pe)
 }
 
 static void *
-heap_copy_locals(Compile *compile, CopyState *state)
+heap_copy_locals(Symbol *sym, CopyState *state)
 {
+	/* Can get called for eg. left-over params from pattern matching.
+	 */
+	if (sym->type != SYM_VALUE)
+		return NULL;
+
+	Compile *compile = sym->expr->compile;
 	Element *base = &compile->base;
 
 	if (main_is_stack_full())
@@ -2013,7 +2019,7 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 	/* Copy this def and all locals, building the relocation table.
 	 */
 	heap_copy_state_init(&state, heap);
-	if (heap_copy_locals(compile, &state)) {
+	if (heap_copy_locals(compile->sym, &state)) {
 		heap_copy_state_free(&state);
 		return FALSE;
 	}
@@ -2034,7 +2040,7 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 	 */
 #ifdef DEBUG
 	printf("heap_copy:\n");
-	pgraph(&new)
+	pgraph(&new);
 #endif /*DEBUG*/
 
 	PEPUTPE(out, &new);
