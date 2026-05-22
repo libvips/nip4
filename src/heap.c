@@ -1841,9 +1841,10 @@ typedef struct _CopyState {
 } CopyState;
 
 static void
-heap_copy_state_init(CopyState *state)
+heap_copy_state_init(CopyState *state, Heap *heap)
 {
 	state->n_reloc = 0;
+	state->heap = heap;
 	state->serial = heap_serial_new(heap);
 }
 
@@ -1868,7 +1869,7 @@ heap_copy_state_alloc(CopyState *state, Compile *compile, PElement *out)
 
 	PEPOINTE(out, &state->relocate[state->n_reloc]);
 	PEPUTP(out, ELEMENT_NOVAL, 0);
-	heap_register_element(heap, &state->relocate[state->n_reloc]);
+	heap_register_element(state->heap, &state->relocate[state->n_reloc]);
 	state->compile[state->n_reloc] = compile;
 	state->n_reloc += 1;
 
@@ -1889,20 +1890,22 @@ heap_copy_state_patch(CopyState *state, PElement *pe)
 }
 
 static void *
-heap_copy_locals(Compile *compile, void *a, void *b)
+heap_copy_locals(Compile *compile, CopyState *state)
 {
-	CopyState *state = (CopyState *) a;
-	Element *base = &state->compile->base;
+	Element *base = &compile->base;
+
+	if (main_is_stack_full())
+		return compile;
 
 	PElement out;
 	HeapNode *ri[MAX_RELOC];
 
-	if (!copy_state_alloc(state, compile, &out))
+	if (!heap_copy_state_alloc(state, compile, &out))
 		return compile;
 
 	switch (base->type) {
 	case ELEMENT_NODE:
-		if (!heap_copy_node(heap, ri, (HeapNode *) base->ele, &out))
+		if (!heap_copy_node(state->heap, ri, (HeapNode *) base->ele, &out))
 			return FALSE;
 		break;
 
@@ -1928,39 +1931,34 @@ heap_copy_locals(Compile *compile, void *a, void *b)
 		g_assert(FALSE);
 	}
 
-	return icontainer_map(ICONTAINER(compile), heap_copy_locals, state, NULL))
+	return icontainer_map(ICONTAINER(compile),
+		(icontainer_map_fn) heap_copy_locals, state, NULL);
 }
 
 static void
-heap_patch_node(CopyState *state, HeapNode *hn)
-{
-	// we can have loops and shared nodes
-	if ((hn->flgs & FLAG_SERIAL) == state->serial)
-		return;
-	SETSERIAL(hn->flgs, state->serial);
-
-	/* This can potentially recurse a lot.
-	 */
-	if (main_is_stack_full())
-		return FALSE;
-
-	if (hn->type != TAG_DOUBLE) {
-		PElement pe;
-
-		PEPOINTLEFT(hn, &pe);
-		heap_patch(state, &pe);
-
-		PEPOINTRIGHT(hn, &pe);
-		heap_patch(state, &pe);
-	}
-}
-
-static gboolean
 heap_patch(CopyState *state, PElement *pe)
 {
+	HeapNode *hn;
+
 	switch (PEGETTYPE(pe)) {
 	case ELEMENT_NODE:
-		heap_patch_node(state, PEGETVAL(pe));
+		hn = PEGETVAL(pe);
+
+		// we can have loops and shared nodes
+		if ((hn->flgs & FLAG_SERIAL) == state->serial)
+			return;
+		SETSERIAL(hn->flgs, state->serial);
+
+		if (hn->type != TAG_DOUBLE) {
+			PElement pe;
+
+			PEPOINTLEFT(hn, &pe);
+			heap_patch(state, &pe);
+
+			PEPOINTRIGHT(hn, &pe);
+			heap_patch(state, &pe);
+		}
+
 		break;
 
 	case ELEMENT_SYMBOL:
@@ -1996,8 +1994,6 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 
 	CopyState state;
 
-	Element *relocate[MAX_RELOC];
-
 #ifdef DEBUG
 	printf("heap_copy: ");
 	symbol_name_print(compile->sym);
@@ -2016,9 +2012,9 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 
 	/* Copy this def and all locals, building the relocation table.
 	 */
-	heap_copy_state_init(&state);
-	if (heap_copy_locals(heap, &state)) {
-		heap_copy_state_free(state);
+	heap_copy_state_init(&state, heap);
+	if (heap_copy_locals(compile, &state)) {
+		heap_copy_state_free(&state);
 		return FALSE;
 	}
 
@@ -2043,7 +2039,7 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 
 	PEPUTPE(out, &new);
 
-	heap_copy_state_free(state);
+	heap_copy_state_free(&state);
 
 	return TRUE;
 }
