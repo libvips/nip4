@@ -319,6 +319,8 @@ compile_finalize(GObject *gobject)
 		VIPS_UNREF(compile->heap);
 	}
 
+	heap_unregister_element(compile->heap, &compile->base);
+
 	/* Junk text.
 	 */
 	VIPS_FREE(compile->text);

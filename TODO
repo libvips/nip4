@@ -19,40 +19,11 @@
 
 - we heap_copy() far too often!
 
-    see reduce.c:1213
+  for functions, note and reuse the main heap copy after building it
 
-  enable trace in heap_copy(), then:
+  need to register the pointer
 
-    foldr add 0 [1..100]
-
-  we copy every loop! nip2 does the same
-
-  after compile, we should link locals, so that copying foldr automatically
-  copies all foldr locals
-
-  or perhaps when we heap_copy() we should recursively copy locals, but not
-  refs to other top levels?
-
-  how should we handle cycles?
-
-    see TAG_SHARED in copy_node() ... as we walk the graph, SHARED nodes must
-    come before references to them
-
-    this won't work for locals
-
-    better to do linking at runtime:
-
-        - walk the whole tree of locals and copy them all to the main heap
-
-        - each time we copy one, add an entry to a relocation table (just a
-          pointer on the Compile?)
-
-        - walk each copy we just made, look for SYMREFs (or COMPILEREFs?) which
-          reference code we just copied, make them point at the copied code
-          instead
-
-        - final sanity walk over the root code, the only symrefs left
-          should be to other toplevels
+  :n
 
 
 - add #include to snip? probably necessary if we want to use it as a

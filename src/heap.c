@@ -2016,7 +2016,8 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 			return FALSE;
 	}
 
-	/* Copy this def and all locals, building the relocation table.
+	/* Copy this def and all locals, building the relocation table. state
+	 * holds the refs to the copied code.
 	 */
 	heap_copy_state_init(&state, heap);
 	if (heap_copy_locals(compile->sym, &state)) {
@@ -2024,7 +2025,7 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 		return FALSE;
 	}
 
-	/* Walk every copy, patching all relocations.
+	/* Walk every copy, making all internal SYMBOL refs into pointers.
 	 */
 	for (int i = 0; i < state.n_reloc; i++) {
 		PElement base;

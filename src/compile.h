@@ -81,11 +81,15 @@ struct _Compile {
 	Symbol *super;		/* If we are a class, the "super" local */
 	GSList *children;	/* Symbols which we directly refer to */
 
-	Element base;		/* Base of compiled code */
 	Heap *heap;			/* Heap containing compiled code */
+	Element base;		/* Base of compiled code in compile heap */
 	GSList *statics;	/* Static strings we built */
 
 	GSList *matchers;	/* The match synbols we built for pattern args */
+
+	/* For top-level functions, the compiled code in the main heap.
+	 */
+	Element root;
 };
 
 typedef struct _CompileClass {
