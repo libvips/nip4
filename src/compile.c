@@ -319,7 +319,9 @@ compile_finalize(GObject *gobject)
 		VIPS_UNREF(compile->heap);
 	}
 
-	heap_unregister_element(compile->heap, &compile->base);
+	/* The pointer we hold into the main heap.
+	 */
+	heap_unregister_element(reduce_context->heap, &compile->root);
 
 	/* Junk text.
 	 */
@@ -382,6 +384,8 @@ compile_init(Compile *compile)
 	compile->base.type = ELEMENT_NOVAL;
 	compile->heap = NULL;
 	compile->statics = NULL;
+
+	compile->root.type = ELEMENT_NOVAL;
 }
 
 /* Make a compile linked to an expr.
@@ -403,6 +407,8 @@ compile_new(Expr *expr)
 	/* We'll want to be able to do name lookups.
 	 */
 	icontainer_set_hash(ICONTAINER(compile));
+
+	heap_register_element(reduce_context->heap, &compile->root);
 
 #ifdef DEBUG
 	printf("compile_new: ");

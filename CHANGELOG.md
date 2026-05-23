@@ -3,6 +3,7 @@
 ## 9.1.4
 
 - better file dialog default location for computed images
+- better reuse of compiled code in graph reduction
 
 ## 9.1.3 2026/05/09
 

@@ -1192,39 +1192,23 @@ reduce_start:
 				reduce_throw(rc);
 			}
 
-			/* We link to symbols with rows or to top-level values, but we
-			 * copy everything else (code, local defs like $$listN, etc.).
-			 *
-			 * We have top copy code and locals since they will reduce to a
-			 * value which we might then edit. We don't want to destroy the
-			 * original value.
+			/* Copy or link compiled code from the private compile
+			 * heap.
 			 */
-			if (sym->expr->row ||
-				(is_top(sym) && compile->nparam == 0)) {
-				/* Make sure the value has copied to the main
-				 * heap.
-				 */
-				if (PEISNOVAL(&sym->expr->root)) {
-					gboolean res;
-
-					res = reduce_regenerate(sym->expr,
-						&sym->expr->root);
-					expr_new_value(sym->expr);
-
-					if (!res)
-						reduce_throw(rc);
-				}
-
-				/* Link to this sym's value.
-				 */
-				PEPUTPE(&np, &sym->expr->root);
-			}
-			else
-				/* Copy compiled code from the private compile
-				 * heap.
-				 */
+			if (compile->root.type != ELEMENT_NOVAL)
+				// use cached value
+				PEPUTE(&np, &compile->root);
+			else {
 				if (!heap_copy(rc->heap, compile, &np))
 					reduce_throw(rc);
+
+				/* If we've copied a function, we can cache the compiled code.
+				 */
+				if (compile->nparam > 0) {
+					compile->root.type = PEGETTYPE(&np);
+					compile->root.ele = PEGETVAL(&np);
+				}
+			}
 
 			goto reduce_start;
 		}
