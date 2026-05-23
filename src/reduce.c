@@ -1192,8 +1192,7 @@ reduce_start:
 				reduce_throw(rc);
 			}
 
-			/* Copy or link compiled code from the private compile
-			 * heap.
+			/* Copy or reuse compiled code.
 			 */
 			if (compile->root.type != ELEMENT_NOVAL)
 				// use cached value
@@ -1204,7 +1203,7 @@ reduce_start:
 
 				/* If we've copied a function, we can cache the compiled code.
 				 */
-				if (compile->nparam > 0) {
+				if (compile->nparam + compile->nsecret > 0) {
 					compile->root.type = PEGETTYPE(&np);
 					compile->root.ele = PEGETVAL(&np);
 				}

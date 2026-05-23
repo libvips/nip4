@@ -1990,8 +1990,7 @@ heap_patch(CopyState *state, PElement *pe)
 }
 
 /* Copy a compiled graph into the main reduce space. Overwrite the node at
- * out. Compile must be a top-level, we also copy all locals and do any
- * linking.
+ * out. Called for eg. class members, so this is not necessarilly a top-level.
  */
 gboolean
 heap_copy(Heap *heap, Compile *compile, PElement *out)
@@ -2005,8 +2004,6 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 	symbol_name_print(compile->sym);
 	printf("\n");
 #endif /*DEBUG*/
-
-	//g_assert(is_top(compile->sym));
 
 	/* Not yet compiled ... eg. perhaps argv.
 	 */
@@ -2037,10 +2034,8 @@ heap_copy(Heap *heap, Compile *compile, PElement *out)
 	PElement new;
 	PEPOINTE(&new, &state.relocate[0]);
 
-	/* The root should now only contain refs to other top-levels.
-	 */
 #ifdef DEBUG
-	printf("heap_copy:\n");
+	printf("heap_copy: generated\n");
 	pgraph(&new);
 #endif /*DEBUG*/
 
