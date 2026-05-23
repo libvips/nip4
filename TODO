@@ -17,15 +17,6 @@
 
     ("hello " ++ print (name) ++ "!")
 
-- we heap_copy() far too often!
-
-  for functions, note and reuse the main heap copy after building it
-
-  need to register the pointer
-
-  :n
-
-
 - add #include to snip? probably necessary if we want to use it as a
   scripting language
 
@@ -39,6 +30,9 @@
 
     seems to all work, find a case where it fails
 
+    Pair classes in charisma fail -- need two edits of base expression to
+    reset
+
 - class params missing value display
 
     can't find a case where this fails
@@ -50,13 +44,6 @@
 ## menus
 
 - look for more missing vips8 features
-
-- Enum.picker could allow string or numeric arg
-
-    style = Plot_style.picker $LINE;
-    style = Plot_style.picker Plot_style.LINE;
-
-  second does a lookup to get the key name
 
 - now that image_new sets interp to sRGB for many band pixels, perhaps we can
   remove some (set_header $interpretation $srgb)?
