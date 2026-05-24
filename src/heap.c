@@ -28,8 +28,8 @@
  */
 
 /*
-#define DEBUG
  */
+#define DEBUG
 
 /* GC on every alloc too! Extraordinarily slow. Turn on DEBUG_HEAP in nip4.h
  * first. Good for spotting heap pointer errors.

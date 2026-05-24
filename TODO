@@ -1,3 +1,16 @@
+- try:
+
+	A1: 12
+	A2: A1 === A1
+		false
+
+  wtf
+
+  works in n4
+
+  common subexpr removal has broken? the two 12s need to get commoned up
+  to be pointer equal
+
 ## C
 
 - ruby string interpolation would be useful
