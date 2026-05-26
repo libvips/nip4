@@ -46,12 +46,12 @@
  */
 
 /* Turn on WHNF tests.
-#define WHNF_DEBUG
  */
+#define WHNF_DEBUG
 
 /* regular tests that we stay in weak head normal form
-#define WHNF_DEBUG
  */
+#define WHNF_DEBUG
 
 /* State of the reduction engine.
  */

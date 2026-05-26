@@ -33,7 +33,6 @@ Region_new_item = class
 Region_union_item = class
     Menuaction "Union" "bounding box of two regions" {
     action x y
-        = error "two regions must be on the same image", x.image !== y.image
         = Region x.image union.left union.top union.width union.height
     {
         xr = Rect x.left x.top x.width x.height;
@@ -45,7 +44,6 @@ Region_union_item = class
 Region_intersection_item = class
     Menuaction "Intersection" "smallest common rect of two regions" {
     action x y
-        = error "two regions must be on the same image", x.image !== y.image
         = Region x.image inter.left inter.top inter.width inter.height
     {
         xr = Rect x.left x.top x.width x.height;
@@ -80,7 +78,6 @@ Region_length_item = class
 Region_contains_item = class
     Menuaction "Contains" "test if one region contains another" {
     action x y
-        = error "two regions must be on the same image", x.image !== y.image
         = xr > yr
     {
         xr = Rect x.left x.top x.width x.height;
@@ -91,7 +88,6 @@ Region_contains_item = class
 Region_equal_item = class
     Menuaction "Equal" "test if two regions are equal" {
     action x y
-        = error "two regions must be on the same image", x.image !== y.image
         = xr == yr
     {
         xr = Rect x.left x.top x.width x.height;

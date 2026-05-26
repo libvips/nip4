@@ -11,6 +11,27 @@
   common subexpr removal has broken? the two 12s need to get commoned up
   to be pointer equal
 
+	(((=== <compileref "A2">) <symbol "A1">) <symbol "A1">)
+
+  TAG_SYMBOL A1 in both sides of the ===, should be equal, you'd think
+
+  action_proc_bop_strict(), case BI_PEQ
+
+  we are using heap_copy to copy the value of A1, so we get two 12s
+
+  maybe we should only do the extra copy if we are making a row?
+
+  or maybe the behaviour is correct? should we just remove the peq test from
+  region?
+
+  or maybe just remove peq haha
+
+  tried removing the peq tests from region, but other stuff is failing with
+  bad heap nodes
+
+  maybe abandon this branch, it's hardly faster, though it does make better
+  use of the heap
+
 ## C
 
 - ruby string interpolation would be useful
