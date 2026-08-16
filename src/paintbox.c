@@ -330,6 +330,7 @@ paintbox_set_tool(Paintbox *paintbox, PaintboxTool tool)
 	}
 }
 
+#ifdef NIP4
 static void
 paintbox_snap_brush(Paintbox *paintbox,
 	int x, int y, int r, int *new_x, int *new_y)
@@ -346,6 +347,7 @@ paintbox_snap_brush(Paintbox *paintbox,
 		*new_y = y;
 	}
 }
+#endif /*NIP4*/
 
 static gboolean
 paintbox_drag_begin(Paintbox *paintbox,
@@ -367,7 +369,9 @@ paintbox_drag_begin(Paintbox *paintbox,
 	int x = rint(image_x);
 	int y = rint(image_y);
 
+#ifdef NIP4
 	int radius = rint(TSLIDER(paintbox->width)->value / 2);
+#endif /*NIP4*/
 
 #ifdef DEBUG_VERBOSE
 	printf("paintbox_drag_begin: start_x = %g, start_y = %g\n",
@@ -380,14 +384,20 @@ paintbox_drag_begin(Paintbox *paintbox,
 		paintbox->state == PAINTBOX_STATE_WAIT) {
 		switch (paintbox->tool) {
 		case PAINTBOX_TOOL_BRUSH:
+#ifdef NIP4
 			paintbox_snap_brush(paintbox, x, y, radius, &x, &y);
+#endif /*NIP4*/
+
 			paintbox->last_x = x;
 			paintbox->last_y = y;
 			paintbox_make_brush(paintbox);
 			break;
 
 		case PAINTBOX_TOOL_LINE:
+#ifdef NIP4
 			imageui_snap_point(paintbox->imageui, x, y, &x, &y);
+#endif /*NIP4*/
+
 			paintbox->last_x = x;
 			paintbox->last_y = y;
 
@@ -398,7 +408,10 @@ paintbox_drag_begin(Paintbox *paintbox,
 			break;
 
 		case PAINTBOX_TOOL_RECT:
+#ifdef NIP4
 			imageui_snap_point(paintbox->imageui, x, y, &x, &y);
+#endif /*NIP4*/
+
 			paintbox->last_x = x;
 			paintbox->last_y = y;
 
@@ -409,7 +422,10 @@ paintbox_drag_begin(Paintbox *paintbox,
 			break;
 
 		case PAINTBOX_TOOL_CIRCLE:
+#ifdef NIP4
 			imageui_snap_point(paintbox->imageui, x, y, &x, &y);
+#endif /*NIP4*/
+
 			paintbox->last_x = x;
 			paintbox->last_y = y;
 
@@ -420,7 +436,10 @@ paintbox_drag_begin(Paintbox *paintbox,
 			break;
 
 		case PAINTBOX_TOOL_SMUDGE:
+#ifdef NIP4
 			paintbox_snap_brush(paintbox, x, y, radius, &x, &y);
+#endif /*NIP4*/
+
 			paintbox->last_x = x;
 			paintbox->last_y = y;
 			break;
@@ -428,9 +447,12 @@ paintbox_drag_begin(Paintbox *paintbox,
 		case PAINTBOX_TOOL_FLOOD_UNTIL:
 		case PAINTBOX_TOOL_FLOOD_WHILE:
 		case PAINTBOX_TOOL_DROPPER:
+#ifdef NIP4
 			// just note the start point in case there's a single click and no
 			// motion
 			imageui_snap_point(paintbox->imageui, x, y, &x, &y);
+#endif /*NIP4*/
+
 			paintbox_set_rubber(paintbox, PAINTBOX_RUBBER_NONE,
 				x, y,
 				0, 0,
@@ -459,7 +481,10 @@ paintbox_drag_begin(Paintbox *paintbox,
 				.width = paintbox->mask->Xsize,
 				.height = paintbox->baseline - paintbox->topline,
 			};
+
+#ifdef NIP4
 			imageui_snap_rect(paintbox->imageui, &rect, &rect);
+#endif /*NIP4*/
 
 			paintbox_set_rubber(paintbox, PAINTBOX_RUBBER_BOX,
 				rect.left,
@@ -1013,7 +1038,10 @@ paintbox_motion(Paintbox *paintbox, gdouble gtk_x, gdouble gtk_y)
 		switch (paintbox->tool) {
 		case PAINTBOX_TOOL_SMUDGE:
 		case PAINTBOX_TOOL_BRUSH:
+#ifdef NIP4
 			paintbox_snap_brush(paintbox, x, y, radius, &x, &y);
+#endif /*NIP4*/
+
 			paintbox_set_rubber(paintbox,
 				PAINTBOX_RUBBER_CIRCLE, x, y, 0, 0, radius, 0);
 			break;
@@ -1025,27 +1053,39 @@ paintbox_motion(Paintbox *paintbox, gdouble gtk_x, gdouble gtk_y)
 		switch (paintbox->tool) {
 		case PAINTBOX_TOOL_SMUDGE:
 		case PAINTBOX_TOOL_BRUSH:
+#ifdef NIP4
 			paintbox_snap_brush(paintbox, x, y, radius, &x, &y);
+#endif /*NIP4*/
+
 			paintbox_set_rubber(paintbox,
 				PAINTBOX_RUBBER_CIRCLE, x, y, 0, 0, radius, 0);
 			break;
 
 		case PAINTBOX_TOOL_LINE:
+#ifdef NIP4
 			imageui_snap_point(paintbox->imageui, x, y, &x, &y);
+#endif /*NIP4*/
+
 			paintbox->x1 = x;
 			paintbox->y1 = y;
 			gtk_widget_queue_draw(paintbox->imagedisplay);
 			break;
 
 		case PAINTBOX_TOOL_RECT:
+#ifdef NIP4
 			imageui_snap_point(paintbox->imageui, x, y, &x, &y);
+#endif /*NIP4*/
+
 			paintbox->x1 = x;
 			paintbox->y1 = y;
 			gtk_widget_queue_draw(paintbox->imagedisplay);
 			break;
 
 		case PAINTBOX_TOOL_CIRCLE:
+#ifdef NIP4
 			imageui_snap_point(paintbox->imageui, x, y, &x, &y);
+#endif /*NIP4*/
+
 			double dx = paintbox->x0 - x;
 			double dy = paintbox->y0 - y;
 			paintbox->a = rint(sqrt(dx * dx + dy * dy));
@@ -1055,8 +1095,11 @@ paintbox_motion(Paintbox *paintbox, gdouble gtk_x, gdouble gtk_y)
 		case PAINTBOX_TOOL_FLOOD_UNTIL:
 		case PAINTBOX_TOOL_FLOOD_WHILE:
 		case PAINTBOX_TOOL_DROPPER:
+#ifdef NIP4
 			// only note the new position
 			imageui_snap_point(paintbox->imageui, x, y, &x, &y);
+#endif /*NIP4*/
+
 			paintbox->x0 = x;
 			paintbox->y0 = y;
 			break;
@@ -1069,7 +1112,11 @@ paintbox_motion(Paintbox *paintbox, gdouble gtk_x, gdouble gtk_y)
 				.width = paintbox->mask->Xsize,
 				.height = paintbox->baseline - paintbox->topline,
 			};
+
+#ifdef NIP4
 			imageui_snap_rect(paintbox->imageui, &text, &text);
+#endif /*NIP4*/
+
 			paintbox->x0 = text.left;
 			paintbox->y0 = text.top;
 
