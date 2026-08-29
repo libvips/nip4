@@ -539,7 +539,7 @@ paintbox_undo_grab(Undobuffer *undo, VipsRect *position)
 
     if (!(frag->saved = tilesource_draw_copy(tilesource, position))) {
         paintbox_undofragment_free(frag);
-		error_vips_all();
+		imagewindow_error(paintbox->win);
         return NULL;
     }
 
@@ -589,7 +589,8 @@ paintbox_undo_mark(Paintbox *paintbox)
 
     /* Junk all redo information, it must be out of date.
      */
-    slist_map(paintbox->redo, (SListMapFn) paintbox_undobuffer_free, NULL);
+    vips_slist_map2(paintbox->redo,
+        (VipsSListMap2Fn) paintbox_undobuffer_free, NULL, NULL);
     VIPS_FREEF(g_slist_free, paintbox->redo);
 
     paintbox_undo_trim(paintbox);
@@ -690,8 +691,8 @@ paintbox_undofragment_paste(Undofragment *frag)
 static void
 paintbox_undobuffer_paste(Undobuffer *undo)
 {
-    slist_map(undo->frags,
-        (SListMapFn) paintbox_undofragment_paste, NULL);
+    vips_slist_map2(undo->frags,
+        (VipsSListMap2Fn) paintbox_undofragment_paste, NULL, NULL);
 }
 
 #ifdef NIP4
