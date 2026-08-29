@@ -459,7 +459,7 @@ paintbox_drag_begin(Paintbox *paintbox,
 				0, 0);
 			break;
 
-		case PAINTBOX_TOOL_TEXT:
+		case PAINTBOX_TOOL_TEXT: {
 			g_autofree char *text =
 				gtk_editable_get_chars(GTK_EDITABLE(paintbox->text_string),
 					0, -1);
@@ -492,8 +492,7 @@ paintbox_drag_begin(Paintbox *paintbox,
 				0, 0,
 				paintbox->mask->Xsize,
 				paintbox->baseline - paintbox->topline);
-
-			break;
+		} break;
 
 		default:
 			break;
