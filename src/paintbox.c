@@ -1081,7 +1081,7 @@ paintbox_motion(Paintbox *paintbox, gdouble gtk_x, gdouble gtk_y)
 			gtk_widget_queue_draw(paintbox->imagedisplay);
 			break;
 
-		case PAINTBOX_TOOL_CIRCLE:
+		case PAINTBOX_TOOL_CIRCLE: {
 #ifdef NIP4
 			imageui_snap_point(paintbox->imageui, x, y, &x, &y);
 #endif /*NIP4*/
@@ -1090,7 +1090,7 @@ paintbox_motion(Paintbox *paintbox, gdouble gtk_x, gdouble gtk_y)
 			double dy = paintbox->y0 - y;
 			paintbox->a = rint(sqrt(dx * dx + dy * dy));
 			gtk_widget_queue_draw(paintbox->imagedisplay);
-			break;
+		} break;
 
 		case PAINTBOX_TOOL_FLOOD_UNTIL:
 		case PAINTBOX_TOOL_FLOOD_WHILE:
@@ -1104,7 +1104,7 @@ paintbox_motion(Paintbox *paintbox, gdouble gtk_x, gdouble gtk_y)
 			paintbox->y0 = y;
 			break;
 
-		case PAINTBOX_TOOL_TEXT:
+		case PAINTBOX_TOOL_TEXT: {
 			// the snap box is positioned with no ascenders and no descenders
 			VipsRect text = {
 				.left = x,
@@ -1121,7 +1121,7 @@ paintbox_motion(Paintbox *paintbox, gdouble gtk_x, gdouble gtk_y)
 			paintbox->y0 = text.top;
 
 			gtk_widget_queue_draw(paintbox->imagedisplay);
-			break;
+		} break;
 
 		default:
 			break;
