@@ -1,10 +1,10 @@
-- leaking on _make_paintable()
+- fix progress bar on make_paintable
 
-	not clear what we're leaking though
+	nip4 st-francis.jpg doesn't display one either
 
-- check progress bar on make_paintable
 
-- maybe inplace should be deprecated?
+
+
 
 
 

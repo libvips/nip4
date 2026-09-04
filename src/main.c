@@ -23,8 +23,8 @@
 
 /*
 #define DEBUG_FATAL
-#define DEBUG
  */
+#define DEBUG
 
 #include "package.h"
 
@@ -198,8 +198,6 @@ main_startup(int argc, char **argv)
 
 #ifdef DEBUG
     vips_leak_set(TRUE);
-	// makes used-after-unref errors more obvious
-    vips_cache_set_max(0);
 #endif /*DEBUG*/
 
 #ifdef DEBUG_FATAL

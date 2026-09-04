@@ -2150,6 +2150,27 @@ tilesource_set_synchronous(Tilesource *tilesource, gboolean synchronous)
 	}
 }
 
+static VipsImage *
+tilesource_paint_begin(Tilesource *tilesource,
+	VipsRect *dirty, TilesourceSaveFn save, void *client)
+{
+	VipsImage *image;
+	if (!(image = tilesource_get_base_image(tilesource)))
+		return NULL;
+
+	vips_rect_normalise(dirty);
+	save(client, dirty);
+
+	return image;
+}
+
+static void
+tilesource_paint_end(Tilesource *tilesource, VipsImage *image, VipsRect *dirty)
+{
+	vips_image_invalidate_all(image);
+	tilesource_invalidate_area(tilesource, dirty);
+}
+
 static void
 tilesource_draw_line_point(VipsImage *image, VipsPel *pink,
 	int x, int y, void *client)
@@ -2165,25 +2186,27 @@ tilesource_draw_line(Tilesource *tilesource,
 	int x0, int y0, int x1, int y1,
 	TilesourceSaveFn save, void *client)
 {
-	VipsImage *image;
-	if ((image = tilesource_get_base_image(tilesource))) {
-		VipsRect dirty = {
-			.left = x0,
-			.top = y0,
-			.width = x1 - x0,
-			.height = y1 - y0,
-		};
-		vips_rect_normalise(&dirty);
-		vips_rect_marginadjust(&dirty, 1 + mask->Xsize / 2);
-		save(client, &dirty);
+	VipsRect dirty = {
+		.left = x0,
+		.top = y0,
+		.width = x1 - x0,
+		.height = y1 - y0,
+	};
+	vips_rect_normalise(&dirty);
+	vips_rect_marginadjust(&dirty, 1 + mask->Xsize / 2);
 
-		vips_draw_line(image, ink, n, x0, y0, x1, y1,
-			"draw-point", tilesource_draw_line_point,
-			"client", mask,
-			NULL);
+	VipsImage *image = tilesource_paint_begin(tilesource, &dirty, save, client);
+	if (!image)
+		return;
 
-		tilesource_invalidate_area(tilesource, &dirty);
-	}
+	printf("tilesource_draw_line: draw line on %p\n", image);
+
+	vips_draw_line(image, ink, n, x0, y0, x1, y1,
+		"draw-point", tilesource_draw_line_point,
+		"client", mask,
+		NULL);
+
+	tilesource_paint_end(tilesource, image, &dirty);
 }
 
 void
@@ -2192,22 +2215,22 @@ tilesource_draw_line1(Tilesource *tilesource,
 	int x0, int y0, int x1, int y1,
 	TilesourceSaveFn save, void *client)
 {
-	VipsImage *image;
-	if ((image = tilesource_get_base_image(tilesource))) {
-		VipsRect dirty = {
-			.left = x0,
-			.top = y0,
-			.width = x1 - x0,
-			.height = y1 - y0,
-		};
-		vips_rect_normalise(&dirty);
-		vips_rect_marginadjust(&dirty, 1);
-		save(client, &dirty);
+	VipsRect dirty = {
+		.left = x0,
+		.top = y0,
+		.width = x1 - x0,
+		.height = y1 - y0,
+	};
+	vips_rect_normalise(&dirty);
+	vips_rect_marginadjust(&dirty, 1);
 
-		vips_draw_line(image, ink, n, x0, y0, x1, y1, NULL);
+	VipsImage *image = tilesource_paint_begin(tilesource, &dirty, save, client);
+	if (!image)
+		return;
 
-		tilesource_invalidate_area(tilesource, &dirty);
-	}
+	vips_draw_line(image, ink, n, x0, y0, x1, y1, NULL);
+
+	tilesource_paint_end(tilesource, image, &dirty);
 }
 
 void
@@ -2216,25 +2239,25 @@ tilesource_draw_rect(Tilesource *tilesource,
 	int left, int top, int width, int height,
 	TilesourceSaveFn save, void *client)
 {
-	VipsImage *image;
-	if ((image = tilesource_get_base_image(tilesource))) {
-		VipsRect dirty = {
-			.left = left,
-			.top = top,
-			.width = width,
-			.height = height,
-		};
-		vips_rect_normalise(&dirty);
-		vips_rect_marginadjust(&dirty, 1);
-		save(client, &dirty);
+	VipsRect dirty = {
+		.left = left,
+		.top = top,
+		.width = width,
+		.height = height,
+	};
+	vips_rect_normalise(&dirty);
+	vips_rect_marginadjust(&dirty, 1);
 
-		vips_draw_rect(image, ink, n,
-			dirty.left, dirty.top, dirty.width, dirty.height,
-			"fill", fill,
-			NULL);
+	VipsImage *image = tilesource_paint_begin(tilesource, &dirty, save, client);
+	if (!image)
+		return;
 
-		tilesource_invalidate_area(tilesource, &dirty);
-	}
+	vips_draw_rect(image, ink, n,
+		dirty.left, dirty.top, dirty.width, dirty.height,
+		"fill", fill,
+		NULL);
+
+	tilesource_paint_end(tilesource, image, &dirty);
 }
 
 void
@@ -2242,24 +2265,24 @@ tilesource_draw_circle(Tilesource *tilesource,
 	double *ink, int n, gboolean fill, int left, int top, int radius,
 	TilesourceSaveFn save, void *client)
 {
-	VipsImage *image;
-	if ((image = tilesource_get_base_image(tilesource))) {
-		VipsRect dirty = {
-			.left = left - radius,
-			.top = top - radius,
-			.width = radius * 2,
-			.height = radius * 2,
-		};
-		vips_rect_normalise(&dirty);
-		vips_rect_marginadjust(&dirty, 1);
-		save(client, &dirty);
+	VipsRect dirty = {
+		.left = left - radius,
+		.top = top - radius,
+		.width = radius * 2,
+		.height = radius * 2,
+	};
+	vips_rect_normalise(&dirty);
+	vips_rect_marginadjust(&dirty, 1);
 
-		vips_draw_circle(image, ink, n, left, top, radius,
-			"fill", fill,
-			NULL);
+	VipsImage *image = tilesource_paint_begin(tilesource, &dirty, save, client);
+	if (!image)
+		return;
 
-		tilesource_invalidate_area(tilesource, &dirty);
-	}
+	vips_draw_circle(image, ink, n, left, top, radius,
+		"fill", fill,
+		NULL);
+
+	tilesource_paint_end(tilesource, image, &dirty);
 }
 
 static void
@@ -2282,34 +2305,34 @@ tilesource_draw_smudge(Tilesource *tilesource, int width,
 	int x0, int y0, int x1, int y1,
 	TilesourceSaveFn save, void *client)
 {
-	VipsImage *image;
-	if ((image = tilesource_get_base_image(tilesource))) {
-		VipsRect dirty = {
-			.left = x0,
-			.top = y0,
-			.width = x1 - x0,
-			.height = y1 - y0,
-		};
-		vips_rect_normalise(&dirty);
-		vips_rect_marginadjust(&dirty, width / 2 + 1);
-		save(client, &dirty);
+	VipsRect dirty = {
+		.left = x0,
+		.top = y0,
+		.width = x1 - x0,
+		.height = y1 - y0,
+	};
+	vips_rect_normalise(&dirty);
+	vips_rect_marginadjust(&dirty, width / 2 + 1);
 
-		// not used, but vips_draw_line likes it
-		double rgb[3] = {0, 0, 0};
-		vips_draw_line(image, rgb, 3, x0, y0, x1, y1,
-			"draw-point", tilesource_draw_smudge_point,
-			"client", GINT_TO_POINTER(width),
-			NULL);
+	VipsImage *image = tilesource_paint_begin(tilesource, &dirty, save, client);
+	if (!image)
+		return;
 
-		// smudging must always make at least 1 change, even for zero-length
-		// lines
-		if (x0 == x1 &&
-			y0 == y1)
-			vips_draw_smudge(image,
-				x0 - width / 2, y0 - width / 2, width, width, NULL);
+	// not used, but vips_draw_line likes it
+	double rgb[3] = {0, 0, 0};
+	vips_draw_line(image, rgb, 3, x0, y0, x1, y1,
+		"draw-point", tilesource_draw_smudge_point,
+		"client", GINT_TO_POINTER(width),
+		NULL);
 
-		tilesource_invalidate_area(tilesource, &dirty);
-	}
+	// smudging must always make at least 1 change, even for zero-length
+	// lines
+	if (x0 == x1 &&
+		y0 == y1)
+		vips_draw_smudge(image,
+			x0 - width / 2, y0 - width / 2, width, width, NULL);
+
+	tilesource_paint_end(tilesource, image, &dirty);
 }
 
 void
@@ -2318,30 +2341,35 @@ tilesource_draw_flood(Tilesource *tilesource,
 	TilesourceSaveFn save, void *client)
 {
 	VipsImage *image;
-	if ((image = tilesource_get_base_image(tilesource)) &&
-		x >= 0 &&
-		y >= 0 &&
-		x < image->Xsize &&
-		y < image->Ysize) {
-		// save the whole image, we don't know how much flood might change
-		VipsRect dirty = {
-			.left = 0,
-			.top = 0,
-			.width = image->Xsize,
-			.height = image->Ysize,
-		};
-		save(client, &dirty);
+	if (!(image = tilesource_get_base_image(tilesource)))
+		return;
+	if (x < 0 ||
+		y < 0 ||
+		x >= image->Xsize ||
+		y >= image->Ysize)
+		return;
 
-		vips_draw_flood(image, ink, n, x, y,
-			"equal", equal,
-			"left", &dirty.left,
-			"top", &dirty.top,
-			"width", &dirty.width,
-			"height", &dirty.height,
-			NULL);
+	// save the whole image, we don't know how much flood might change
+	VipsRect dirty = {
+		.left = 0,
+		.top = 0,
+		.width = image->Xsize,
+		.height = image->Ysize,
+	};
 
-		tilesource_invalidate_area(tilesource, &dirty);
-	}
+	image = tilesource_paint_begin(tilesource, &dirty, save, client);
+	if (!image)
+		return;
+
+	vips_draw_flood(image, ink, n, x, y,
+		"equal", equal,
+		"left", &dirty.left,
+		"top", &dirty.top,
+		"width", &dirty.width,
+		"height", &dirty.height,
+		NULL);
+
+	tilesource_paint_end(tilesource, image, &dirty);
 }
 
 void
@@ -2349,22 +2377,22 @@ tilesource_draw_mask(Tilesource *tilesource,
 	double *ink, int n, VipsImage *mask, int x, int y,
 	TilesourceSaveFn save, void *client)
 {
-	VipsImage *image;
-	if ((image = tilesource_get_base_image(tilesource))) {
-		VipsRect dirty = {
-			.left = x,
-			.top = y,
-			.width = mask->Xsize,
-			.height = mask->Ysize,
-		};
-		vips_rect_normalise(&dirty);
-		vips_rect_marginadjust(&dirty, 1);
-		save(client, &dirty);
+	VipsRect dirty = {
+		.left = x,
+		.top = y,
+		.width = mask->Xsize,
+		.height = mask->Ysize,
+	};
+	vips_rect_normalise(&dirty);
+	vips_rect_marginadjust(&dirty, 1);
 
-		vips_draw_mask(image, ink, n, mask, x, y, NULL);
+	VipsImage *image = tilesource_paint_begin(tilesource, &dirty, save, client);
+	if (!image)
+		return;
 
-		tilesource_invalidate_area(tilesource, &dirty);
-	}
+	vips_draw_mask(image, ink, n, mask, x, y, NULL);
+
+	tilesource_paint_end(tilesource, image, &dirty);
 }
 
 /* Copy a rect from the image into a memory image.
@@ -2398,7 +2426,7 @@ tilesource_draw_copy(Tilesource *tilesource, VipsRect *area)
 		}
 	}
 
-    return NULL;
+	return NULL;
 }
 
 /* Paste a rect back into the image.
@@ -2409,7 +2437,7 @@ tilesource_draw_paste(Tilesource *tilesource, VipsImage *paste, VipsRect *area)
 	VipsImage *image;
 	if ((image = tilesource_get_base_image(tilesource))) {
 		vips_draw_image(image, paste, area->left, area->top, NULL);
-		tilesource_invalidate_area(tilesource, area);
+		tilesource_paint_end(tilesource, image, area);
 	}
 }
 

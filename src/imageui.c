@@ -28,8 +28,8 @@
  */
 
 /*
-#define DEBUG
  */
+#define DEBUG
 
 #include "package.h"
 
@@ -1570,19 +1570,21 @@ imageui_make_paintable(Imageui *imageui)
 				IMAGEWINDOW(gtk_widget_get_root(GTK_WIDGET(imageui)));
 			iImage *iimage = imagewindow_get_iimage(win);
 
-			VipsImage *memory;
-			if (!(memory = vips_image_copy_memory(image)))
+			VipsImage *draw;
+			if (!(draw = vips_image_copy_draw(image)))
 				return FALSE;
 			Imageinfo *new_ii = imageinfo_new(main_imageinfogroup,
-				reduce_context->heap, memory, NULL);
+				reduce_context->heap, draw, NULL);
 			image_value_set(&iimage->value, new_ii);
-			VIPS_UNREF(memory);
 
 #ifdef DEBUG
-			printf("\tnew writeable image is %p\n", memory);
+			printf("\tnew writeable image is %p\n", draw);
 #endif /*DEBUG*/
 
 			imageui->is_paintable = TRUE;
+
+			// everything needs to update
+			classmodel_update(CLASSMODEL(iimage));
 		}
 	}
 
