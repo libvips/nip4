@@ -141,6 +141,27 @@ progress_event_free(ProgressEvent *event)
 	VIPS_FREE(event);
 }
 
+static void
+progress_emit_begin(Progress *progress)
+{
+	g_signal_emit(G_OBJECT(progress), progress_signals[SIG_BEGIN], 0);
+}
+
+static gboolean
+progress_emit_update(Progress *progress)
+{
+	gboolean cancel = FALSE;
+	g_signal_emit(progress, progress_signals[SIG_UPDATE], 0, &cancel);
+
+	return cancel;
+}
+
+static void
+progress_emit_end(Progress *progress)
+{
+	g_signal_emit(G_OBJECT(progress), progress_signals[SIG_END], 0);
+}
+
 static gboolean
 progress_event_idle(void *user_data)
 {
@@ -154,6 +175,7 @@ progress_event_idle(void *user_data)
 		if (progress->count == 1) {
 			g_timer_start(progress->busy_timer);
 			g_timer_start(progress->update_timer);
+			progress->last_update_time = -1;
 		}
 
 		// don't emit BEGIN right away, we want to wait a moment
@@ -165,9 +187,7 @@ progress_event_idle(void *user_data)
 
 			if (!progress->busy &&
 				elapsed > 0.5) {
-
-				g_signal_emit(G_OBJECT(progress),
-					progress_signals[SIG_BEGIN], 0);
+				progress_emit_begin(progress);
 				progress->busy = TRUE;
 			}
 		}
@@ -185,9 +205,8 @@ progress_event_idle(void *user_data)
 		progress->percent = event->percent;
 		progress->eta = event->eta;
 
-		gboolean cancel = FALSE;
-		g_signal_emit(progress, progress_signals[SIG_UPDATE], 0, &cancel);
-		if (cancel)
+		if (progress->busy &&
+			progress_emit_update(progress))
 			progress->cancel = TRUE;
 
 		break;
@@ -195,7 +214,7 @@ progress_event_idle(void *user_data)
 	case SIG_END:
 		if (progress->count == 1) {
 			if (progress->busy)
-				g_signal_emit(G_OBJECT(progress), progress_signals[SIG_END], 0);
+				progress_emit_end(progress);
 
 			progress->count = 0;
 			progress->cancel = FALSE;
@@ -247,8 +266,6 @@ progress_begin(void)
 gboolean
 progress_update_percent(int percent, int eta)
 {
-	process_events();
-
 	Progress *progress = progress_get();
 
 	char text[256];
@@ -278,8 +295,6 @@ progress_update_percent(int percent, int eta)
 gboolean
 progress_update_expr(Expr *expr)
 {
-	process_events();
-
 	Progress *progress = progress_get();
 
 	char text[256];
@@ -304,8 +319,6 @@ progress_update_expr(Expr *expr)
 gboolean
 progress_update_loading(int percent, const char *filename)
 {
-	process_events();
-
 	Progress *progress = progress_get();
 
 	char text[256];
@@ -324,8 +337,6 @@ progress_update_loading(int percent, const char *filename)
 gboolean
 progress_update_tick(void)
 {
-	process_events();
-
 	Progress *progress = progress_get();
 
 	ProgressEvent *event = progress_event_new(SIG_UPDATE, 0, 0, "");
