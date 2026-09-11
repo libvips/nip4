@@ -36,7 +36,7 @@
 #ifdef NIP4
 G_DEFINE_TYPE(Progress, progress, IOBJECT_TYPE)
 #else /*!NIP4*/
-G_DEFINE_TYPE(Progress, progress, G_OBJECT_TYPE)
+G_DEFINE_TYPE(Progress, progress, G_TYPE_OBJECT)
 #endif /*NIP4*/
 
 /* Our signals.
