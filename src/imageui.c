@@ -1552,42 +1552,34 @@ imageui_gtk_to_image_rect(Imageui *imageui, VipsRect *in, VipsRect *out)
 gboolean
 imageui_make_paintable(Imageui *imageui)
 {
-	if (!imageui->is_paintable) {
-		/* We can't use vips_image_inplace(), it'll fail with many threads on
-		 * one image.
-		 *
-		 * tilesource_new_from_image() takes the base image, so we must copy
-		 * that to memory.
-		 *
-		 * FIXME ... add something like copy_memory that maps VIPS images r/w
-		 */
-		VipsImage *image;
-		if ((image = tilesource_get_base_image(imageui->tilesource))) {
+	VipsImage *image;
+
+	if (!imageui->is_paintable &&
+		(image = tilesource_get_base_image(imageui->tilesource))) {
 #ifdef DEBUG
-			printf("imageui_make_paintable:\n");
+		printf("imageui_make_paintable:\n");
 #endif /*DEBUG*/
 
-			Imagewindow *win =
-				IMAGEWINDOW(gtk_widget_get_root(GTK_WIDGET(imageui)));
-			iImage *iimage = imagewindow_get_iimage(win);
+		Imagewindow *win =
+			IMAGEWINDOW(gtk_widget_get_root(GTK_WIDGET(imageui)));
+		iImage *iimage = imagewindow_get_iimage(win);
 
-			VipsImage *draw;
-			if (!(draw = vips_image_copy_draw(image)))
-				return FALSE;
+		VipsImage *draw;
+		if (!(draw = vips_image_copy_draw(image)))
+			return FALSE;
 
-			Imageinfo *new_ii = imageinfo_new(main_imageinfogroup,
-				reduce_context->heap, draw, NULL);
-			image_value_set(&iimage->value, new_ii);
+		Imageinfo *new_ii = imageinfo_new(main_imageinfogroup,
+			reduce_context->heap, draw, NULL);
+		image_value_set(&iimage->value, new_ii);
 
 #ifdef DEBUG
-			printf("\tnew writeable image is %p\n", draw);
+		printf("\tnew writeable image is %p\n", draw);
 #endif /*DEBUG*/
 
-			imageui->is_paintable = TRUE;
+		imageui->is_paintable = TRUE;
 
-			// everything needs to update
-			classmodel_update(CLASSMODEL(iimage));
-		}
+		// everything needs to update
+		classmodel_update(CLASSMODEL(iimage));
 	}
 
 	return TRUE;
