@@ -646,8 +646,8 @@ tilesource_rgb(Tilesource *tilesource, VipsImage *in)
 
 	/* The image interpretation might be crazy (eg. a mono image tagged as
 	 * srgb) and that'll mess up our rules for display.
-	 */
 	image->Type = vips_image_guess_interpretation(image);
+	 */
 
 	/* We don't want vis controls to touch alpha ... remove and reattach at
 	 * the end.
