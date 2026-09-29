@@ -819,8 +819,10 @@ imageinfo_attach_check(Imageinfo *imageinfo)
 
 		imageinfo->mtime = buf.st_mtime;
 		imageinfo->check_mtime = imageinfo->mtime;
+		/*
 		imageinfo->check_tid = g_timeout_add(1000,
 			(GSourceFunc) imageinfo_attach_check_cb, imageinfo);
+		 */
 
 #ifdef DEBUG_CHECK
 		printf("imageinfo_attach_check: starting to check");
