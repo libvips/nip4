@@ -453,6 +453,8 @@ apply_image_call(BuiltinInfo *builtin,
 {
 	Heap *heap = rc->heap;
 
+	printf("apply_image_call:\n");
+
 	PElement rhs;
 	char buf[VIPS_PATH_MAX];
 	char filename[VIPS_PATH_MAX];
@@ -465,6 +467,8 @@ apply_image_call(BuiltinInfo *builtin,
 	 */
 	PEPOINTRIGHT(arg[0], &rhs);
 	(void) reduce_get_string(rc, &rhs, buf, VIPS_PATH_MAX);
+
+	printf("\tfilename = %s\n", buf);
 
 	/* The buf might be something like n3862.pyr.tif[page=12], ie. contain
 	 * some load options. Split and search just for the filename component.
@@ -484,6 +488,10 @@ apply_image_call(BuiltinInfo *builtin,
 		reduce_throw(rc);
 	}
 	VIPS_FREE(fn);
+
+	printf("\tii = %p\n", ii);
+	printf("\tii->image = %p\n", ii->image);
+	vips_object_print_dump(VIPS_OBJECT(ii->image));
 
 	PEPUTP(out, ELEMENT_MANAGED, ii);
 	MANAGED_UNREF(ii);
