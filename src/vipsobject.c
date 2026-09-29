@@ -151,7 +151,7 @@ vo_gvalue_copy(const GValue *in, GValue *out)
 	if (G_VALUE_TYPE(out) == VIPS_TYPE_IMAGE) {
 		VipsImage *image = VIPS_IMAGE(g_value_get_object(out));
 
-		printf("vo_gvalue_copy:\n"):
+		printf("vo_gvalue_copy:\n");
 
 		// always make a deep copy of an image so we can't modify our argument
 		VipsImage *copy = vips_image_new_memory();
