@@ -224,6 +224,9 @@ matrix2image(PElement *root)
 int
 image2matrix(VipsImage *in, double **values, int *width, int *height)
 {
+	printf("image2matrix:\n");
+	vips_object_print_dump(VIPS_OBJECT(in));
+
 	if (in->Bands == 1) {
 		*width = in->Xsize;
 		*height = in->Ysize;
@@ -283,6 +286,13 @@ image2matrix(VipsImage *in, double **values, int *width, int *height)
 	VIPS_UNREF(context);
 
 	*values = (double *) mem;
+
+	for (int y = 0; y < *height; y++) {
+		printf("\t");
+		for (int x = 0; x < *width; x++)
+			printf("%10g ", (*values)[x + y * *width]);
+		printf("\n");
+	}
 
 	return 0;
 }

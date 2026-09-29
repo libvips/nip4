@@ -407,7 +407,7 @@
                 {
                     "type" : "git",
                     "url" : "https://github.com/libvips/libvips.git",
-                    "commit" : "bf0664629e9c869b14e6ed2e15aa609e086dfead"
+                    "commit" : "e0a3fbdd432c92b2243657a9a72602570055b2a3"
                 }
             ]
         },
@@ -440,7 +440,7 @@
                 {
                     "type" : "git",
                     "url" : "https://github.com/jcupitt/nip4.git",
-                    "commit" : "dbc2c3be26b8e2d756d4fd3c3c1882c55e7bb29a"
+                    "commit" : "70ddb1080b50be01efaf264e72b37fba8fc9b3f0"
                 }
             ]
         }
