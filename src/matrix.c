@@ -195,9 +195,10 @@ matrix2image(PElement *root)
 	if (!(matrix = vips_image_new_matrix(width, height)))
 		return NULL;
 
+	// always make a new name for a new image ... we don't want to replace an
+	// image in imageinfogroup
 	char buf[MAX_STRSIZE];
-	if (!class_get_member_string(root, MEMBER_FILENAME, buf, MAX_STRSIZE) &&
-		!temp_name(buf, NULL, "mat")) {
+	if (!temp_name(buf, NULL, "mat")) {
 		VIPS_UNREF(matrix);
 		return NULL;
 	}
