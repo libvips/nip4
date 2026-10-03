@@ -363,7 +363,9 @@ main(int argc, char **argv)
 	/* Don't look for errors, we pass arg processing on to .defs.
 	 */
 #ifdef G_OS_WIN32
+	argv = g_win32_get_command_line();
     (void) g_option_context_parse_strv(context, &argv, NULL);
+	argc = g_strv_length(argv);
 #else  /*!G_OS_WIN32*/
     (void) g_option_context_parse(context, &argc, &argv, NULL);
 #endif /*G_OS_WIN32*/
