@@ -354,7 +354,7 @@ app_new(gboolean welcome)
 		"welcome", welcome,
 		"flags", G_APPLICATION_HANDLES_OPEN,
 		// we usually want each invocation to be a separate instance so they
-		// can't take each opther down
+		// can't take each other down
 		// "register-session", TRUE,
 		// "inactivity-timeout", 3000,
 		// "application-id", APPLICATION_ID,
