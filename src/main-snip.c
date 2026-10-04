@@ -342,6 +342,14 @@ main(int argc, char **argv)
 	// disable DoS limits on libvips 8.19+
     g_setenv("VIPS_UNLIMITED", "1", TRUE);
 
+	/* On Windows, argv is ascii-only ... use this to get a utf-8 version of
+	 * the args.
+	 */
+#ifdef G_OS_WIN32
+	argv = g_win32_get_command_line();
+	argc = g_strv_length(argv);
+#endif /*G_OS_WIN32*/
+
 	if (VIPS_INIT(argv[0]))
 		vips_error_exit("unable to start libvips");
 
@@ -360,13 +368,9 @@ main(int argc, char **argv)
     g_option_group_set_translation_domain(main_group, GETTEXT_PACKAGE);
     g_option_context_set_main_group(context, main_group);
 
-	/* Don't look for errors, we pass arg processing on to .defs.
+	/* Don't check for errors, we pass arg processing on to .defs.
 	 */
-#ifdef G_OS_WIN32
-    (void) g_option_context_parse_strv(context, &argv, NULL);
-#else  /*!G_OS_WIN32*/
     (void) g_option_context_parse(context, &argc, &argv, NULL);
-#endif /*G_OS_WIN32*/
 
     g_option_context_free(context);
 
@@ -395,13 +399,6 @@ main(int argc, char **argv)
     if (main_option_i18n ||
 		main_option_workspace)
         main_option_no_load_menus = FALSE;
-
-	/* On Windows, argv is ascii-only ... use this to get a utf-8 version of
-	 * the args.
-	 */
-#ifdef G_OS_WIN32
-	argv = g_win32_get_command_line();
-#endif /*G_OS_WIN32*/
 
     main_startup(argc, argv);
 
