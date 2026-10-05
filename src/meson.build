@@ -1,7 +1,7 @@
 marshal = gnome.genmarshal(
   'nip4marshal',
-  sources: 'nip4marshal.list',
   prefix: 'app',
+  sources: 'nip4marshal.list',
 )
 
 resources = gnome.compile_resources(
