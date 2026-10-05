@@ -2,7 +2,7 @@
 
 ## 9.2.2 tbd
 
-- better utf8 arg parsing [wacklefluff]
+- better arg parsing [wacklefluff]
 
 ## 9.2.1 2026/10/01
 

@@ -51,10 +51,12 @@ static GOptionEntry main_batch_options[] = {
         N_("load args as workspaces"), NULL },
     { "i18n", 'i', 0, G_OPTION_ARG_NONE, &main_option_i18n,
         N_("output strings for internationalisation"), NULL },
+	// use FILENAME not STRING to stop locale conversion on linux
     { "expression", 'e', 0, G_OPTION_ARG_FILENAME, &main_option_expression,
         N_("evaluate and print EXPRESSION"), "EXPRESSION" },
     { "verbose", 'V', 0, G_OPTION_ARG_NONE, &main_option_verbose,
         N_("verbose error output"), NULL },
+	// use FILENAME not STRING to stop locale conversion on linux
     { "set", '=', 0, G_OPTION_ARG_FILENAME_ARRAY, &main_option_set,
         N_("set values"), NULL },
 
@@ -342,12 +344,17 @@ main(int argc, char **argv)
 	// disable DoS limits on libvips 8.19+
     g_setenv("VIPS_UNLIMITED", "1", TRUE);
 
+#ifdef G_OS_WIN32
 	/* On Windows, argv is ascii-only ... use this to get a utf-8 version of
 	 * the args.
 	 */
-#ifdef G_OS_WIN32
 	argv = g_win32_get_command_line();
 	argc = g_strv_length(argv);
+#else /*!G_OS_WIN32*/
+	/* On other platforms we need a version of argv we can call
+	 * g_option_context_parse_strv() on.
+	 */
+	argv = g_strdupv(argv);
 #endif /*G_OS_WIN32*/
 
 	if (VIPS_INIT(argv[0]))
@@ -370,7 +377,8 @@ main(int argc, char **argv)
 
 	/* Don't check for errors, we pass arg processing on to .defs.
 	 */
-    (void) g_option_context_parse(context, &argc, &argv, NULL);
+    (void) g_option_context_parse_strv(context, &argv, NULL);
+	argc = g_strv_length(argv);
 
     g_option_context_free(context);
 
