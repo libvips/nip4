@@ -51,11 +51,11 @@ static GOptionEntry main_batch_options[] = {
         N_("load args as workspaces"), NULL },
     { "i18n", 'i', 0, G_OPTION_ARG_NONE, &main_option_i18n,
         N_("output strings for internationalisation"), NULL },
-    { "expression", 'e', 0, G_OPTION_ARG_STRING, &main_option_expression,
+    { "expression", 'e', 0, G_OPTION_ARG_FILENAME, &main_option_expression,
         N_("evaluate and print EXPRESSION"), "EXPRESSION" },
     { "verbose", 'V', 0, G_OPTION_ARG_NONE, &main_option_verbose,
         N_("verbose error output"), NULL },
-    { "set", '=', 0, G_OPTION_ARG_STRING_ARRAY, &main_option_set,
+    { "set", '=', 0, G_OPTION_ARG_FILENAME_ARRAY, &main_option_set,
         N_("set values"), NULL },
 
     { NULL }

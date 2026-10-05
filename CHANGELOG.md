@@ -2,7 +2,7 @@
 
 ## 9.2.2 tbd
 
-- better win32 arg parsing
+- better utf8 arg parsing [wacklefluff]
 
 ## 9.2.1 2026/10/01
 
