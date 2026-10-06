@@ -1,5 +1,9 @@
 ## master
 
+## 9.2.2 tbd
+
+- better arg parsing [wacklefluff]
+
 ## 9.2.1 2026/10/01
 
 - deep copy of MODIFY image args

@@ -49,6 +49,23 @@ main(int argc, char **argv)
 	// disable DoS limits on libvips 8.19+
     g_setenv("VIPS_UNLIMITED", "1", TRUE);
 
+#ifdef ENABLE_NLS
+    textdomain(GETTEXT_PACKAGE);
+#endif /* ENABLE_NLS */
+    setlocale(LC_ALL, "");
+
+#ifdef G_OS_WIN32
+	/* On Windows, argv is ascii-only ... use this to get a utf-8 version of
+	 * the args.
+	 */
+	argv = g_win32_get_command_line();
+#1else /*!G_OS_WIN32*/
+	/* On other platforms we need a version of argv we can call
+	 * g_option_context_parse_strv() on.
+	 */
+	argv = g_strdupv(argv);
+#endif /*G_OS_WIN32*/
+
 	if (VIPS_INIT(argv[0]))
 		vips_error_exit("unable to start libvips");
 
@@ -70,12 +87,7 @@ main(int argc, char **argv)
     g_option_context_set_main_group(context, main_group);
 
 	GError *error = NULL;
-#ifdef G_OS_WIN32
-	if (!g_option_context_parse_strv(context, &argv, &error))
-#else  /*!G_OS_WIN32*/
-	if (!g_option_context_parse(context, &argc, &argv, &error))
-#endif /*G_OS_WIN32*/
-	{
+	if (!g_option_context_parse_strv(context, &argv, &error)) {
 		if (error) {
 			fprintf(stderr, "%s\n", error->message);
 			g_error_free(error);
@@ -83,6 +95,7 @@ main(int argc, char **argv)
 
 		vips_error_exit("try \"%s --help\"", g_get_prgname());
 	}
+	argc = g_strv_length(argv);
 
 	g_option_context_free(context);
 
@@ -95,13 +108,6 @@ main(int argc, char **argv)
 
 		exit(0);
 	}
-
-	/* On Windows, argv is ascii-only ... use this to get a utf-8 version of
-	 * the args.
-	 */
-#ifdef G_OS_WIN32
-	argv = g_win32_get_command_line();
-#endif /*G_OS_WIN32*/
 
 	main_startup(argc, argv);
 

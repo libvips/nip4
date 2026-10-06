@@ -342,6 +342,23 @@ main(int argc, char **argv)
 	// disable DoS limits on libvips 8.19+
     g_setenv("VIPS_UNLIMITED", "1", TRUE);
 
+#ifdef ENABLE_NLS
+    textdomain(GETTEXT_PACKAGE);
+#endif /* ENABLE_NLS */
+    setlocale(LC_ALL, "");
+
+#ifdef G_OS_WIN32
+	/* On Windows, argv is ascii-only ... use this to get a utf-8 version of
+	 * the args.
+	 */
+	argv = g_win32_get_command_line();
+#else /*!G_OS_WIN32*/
+	/* On other platforms we need a version of argv we can call
+	 * g_option_context_parse_strv() on.
+	 */
+	argv = g_strdupv(argv);
+#endif /*G_OS_WIN32*/
+
 	if (VIPS_INIT(argv[0]))
 		vips_error_exit("unable to start libvips");
 
@@ -353,20 +370,17 @@ main(int argc, char **argv)
     g_set_application_name(_(PACKAGE));
 
     GOptionContext *context =
-		g_option_context_new(_("- batch interface to nip4"));
+		g_option_context_new(_("- programming language for nip4"));
     GOptionGroup *main_group = g_option_group_new(NULL, NULL, NULL, NULL, NULL);
     g_option_group_add_entries(main_group, main_batch_options);
     vips_add_option_entries(main_group);
     g_option_group_set_translation_domain(main_group, GETTEXT_PACKAGE);
     g_option_context_set_main_group(context, main_group);
 
-	/* Don't look for errors, we pass arg processing on to .defs.
+	/* Don't check for errors, we pass arg processing on to .defs.
 	 */
-#ifdef G_OS_WIN32
     (void) g_option_context_parse_strv(context, &argv, NULL);
-#else  /*!G_OS_WIN32*/
-    (void) g_option_context_parse(context, &argc, &argv, NULL);
-#endif /*G_OS_WIN32*/
+	argc = g_strv_length(argv);
 
     g_option_context_free(context);
 
@@ -395,13 +409,6 @@ main(int argc, char **argv)
     if (main_option_i18n ||
 		main_option_workspace)
         main_option_no_load_menus = FALSE;
-
-	/* On Windows, argv is ascii-only ... use this to get a utf-8 version of
-	 * the args.
-	 */
-#ifdef G_OS_WIN32
-	argv = g_win32_get_command_line();
-#endif /*G_OS_WIN32*/
 
     main_startup(argc, argv);
 
