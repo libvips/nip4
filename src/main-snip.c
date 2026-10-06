@@ -51,13 +51,11 @@ static GOptionEntry main_batch_options[] = {
         N_("load args as workspaces"), NULL },
     { "i18n", 'i', 0, G_OPTION_ARG_NONE, &main_option_i18n,
         N_("output strings for internationalisation"), NULL },
-	// use FILENAME not STRING to stop locale conversion on linux
-    { "expression", 'e', 0, G_OPTION_ARG_FILENAME, &main_option_expression,
+    { "expression", 'e', 0, G_OPTION_ARG_STRING, &main_option_expression,
         N_("evaluate and print EXPRESSION"), "EXPRESSION" },
     { "verbose", 'V', 0, G_OPTION_ARG_NONE, &main_option_verbose,
         N_("verbose error output"), NULL },
-	// use FILENAME not STRING to stop locale conversion on linux
-    { "set", '=', 0, G_OPTION_ARG_FILENAME_ARRAY, &main_option_set,
+    { "set", '=', 0, G_OPTION_ARG_STRING_ARRAY, &main_option_set,
         N_("set values"), NULL },
 
     { NULL }
@@ -344,12 +342,16 @@ main(int argc, char **argv)
 	// disable DoS limits on libvips 8.19+
     g_setenv("VIPS_UNLIMITED", "1", TRUE);
 
+#ifdef ENABLE_NLS
+    textdomain(GETTEXT_PACKAGE);
+#endif /* ENABLE_NLS */
+    setlocale(LC_ALL, "");
+
 #ifdef G_OS_WIN32
 	/* On Windows, argv is ascii-only ... use this to get a utf-8 version of
 	 * the args.
 	 */
 	argv = g_win32_get_command_line();
-	argc = g_strv_length(argv);
 #else /*!G_OS_WIN32*/
 	/* On other platforms we need a version of argv we can call
 	 * g_option_context_parse_strv() on.
@@ -368,7 +370,7 @@ main(int argc, char **argv)
     g_set_application_name(_(PACKAGE));
 
     GOptionContext *context =
-		g_option_context_new(_("- batch interface to nip4"));
+		g_option_context_new(_("- programming language for nip4"));
     GOptionGroup *main_group = g_option_group_new(NULL, NULL, NULL, NULL, NULL);
     g_option_group_add_entries(main_group, main_batch_options);
     vips_add_option_entries(main_group);
