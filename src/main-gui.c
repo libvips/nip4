@@ -59,7 +59,7 @@ main(int argc, char **argv)
 	 * the args.
 	 */
 	argv = g_win32_get_command_line();
-#1else /*!G_OS_WIN32*/
+#else /*!G_OS_WIN32*/
 	/* On other platforms we need a version of argv we can call
 	 * g_option_context_parse_strv() on.
 	 */
