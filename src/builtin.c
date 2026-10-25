@@ -131,17 +131,24 @@ pe_is_enum(Reduce *rc, PElement *base)
 	return pe_is_real(rc, base) || reduce_is_finitestring(rc, base);
 }
 
+static gboolean
+pe_is_gvalue(Reduce *rc, PElement *base)
+{
+	return PEISMANAGEDGVALUE(base);
+}
+
 static BuiltinTypeSpot enum_spot = { "GEnum", pe_is_enum };
 static BuiltinTypeSpot gobject_spot = { "GObject", pe_is_gobject };
 static BuiltinTypeSpot bool_spot = { "bool", pe_is_bool };
 static BuiltinTypeSpot char_spot = { "char", pe_is_char };
 static BuiltinTypeSpot realvec_spot = { "[real]", reduce_is_realvec };
-static BuiltinTypeSpot vimage_spot = { "vips_image", pe_is_image_or_matrix };
-static BuiltinTypeSpot vimagevec_spot = { "[vips_image]", reduce_is_imagevec };
+static BuiltinTypeSpot vimage_spot = { "<VipsImage>", pe_is_image_or_matrix };
+static BuiltinTypeSpot vimagevec_spot = { "[<VipsImage>]", reduce_is_imagevec };
 static BuiltinTypeSpot real_spot = { "real", pe_is_real };
 static BuiltinTypeSpot complex_spot = { "complex|image", iscomplexarg };
 static BuiltinTypeSpot flist_spot = { "non-empty list", pe_is_flist };
 static BuiltinTypeSpot string_spot = { "[char]", reduce_is_finitestring };
+static BuiltinTypeSpot blob_spot = { "<VipsBlob>", pe_is_gvalue };
 static BuiltinTypeSpot list_spot = { "[*]", reduce_is_list };
 static BuiltinTypeSpot options_spot = { "[options]", reduce_is_list };
 static BuiltinTypeSpot math_spot = { "image|real|complex", ismatharg };
@@ -1543,9 +1550,12 @@ builtin_add_arg(VipsObject *object, GParamSpec *pspec,
 			break;
 
 		default:
-			if (type == VIPS_TYPE_SAVE_STRING ||
-				type == VIPS_TYPE_REF_STRING ||
-				type == VIPS_TYPE_BLOB)
+			/* BOXED args.
+			 */
+			if (type == VIPS_TYPE_BLOB)
+				builtin->args[builtin->nargs] = &blob_spot;
+			else if (type == VIPS_TYPE_SAVE_STRING ||
+				type == VIPS_TYPE_REF_STRING)
 				builtin->args[builtin->nargs] = &string_spot;
 			else if (fundamental == G_TYPE_ENUM)
 				builtin->args[builtin->nargs] = &enum_spot;
@@ -1556,6 +1566,8 @@ builtin_add_arg(VipsObject *object, GParamSpec *pspec,
 				builtin->args[builtin->nargs] = &vimage_spot;
 			else if (type == VIPS_TYPE_ARRAY_IMAGE)
 				builtin->args[builtin->nargs] = &vimagevec_spot;
+			/* GObject args.
+			 */
 			else if (fundamental == G_TYPE_OBJECT)
 				builtin->args[builtin->nargs] = &gobject_spot;
 			else {

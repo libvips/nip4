@@ -3,6 +3,7 @@
 ## 9.2.2 tbd
 
 - better arg parsing [wacklefluff]
+- support VipsBlob, so `*load_buffer` and `*save_buffer` work
 
 ## 9.2.1 2026/10/01
 
