@@ -251,11 +251,7 @@ app_startup(GApplication *app)
 	 */
 	GtkSettings *settings = gtk_settings_get_default();
 	g_object_set(settings,
-#if GTK_CHECK_VERSION(4, 20, 0)
-        "gtk-interface-color-scheme", GTK_INTERFACE_COLOR_SCHEME_DARK,
-#else /*!GTK_CHECK_VERSION(4, 20, 0)*/
-        "gtk-application-prefer-dark-theme", TRUE,
-#endif /*GTK_CHECK_VERSION(4, 20, 0)*/
+		"gtk-application-prefer-dark-theme", TRUE,
 		NULL);
 
 	/* Build our GUI widgets.
