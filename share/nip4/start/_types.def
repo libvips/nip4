@@ -1543,3 +1543,13 @@ CICP_matrix = class Enum {
         [UNSPECIFIED, "Unspecified"]
     ];
 }
+
+CICP_range = class Enum {
+    RESTRICTED = 0;
+    FULL = 1;
+
+    _description = [
+        [RESTRICTED, "Restricted (not supported)"],
+        [FULL, "Full range"]
+    ];
+}

@@ -589,6 +589,8 @@ Colour_CICP_item = class
 		(get_header "cicp-transfer-characteristics" x);
             matrix = CICP_matrix.picker
 		(get_header "cicp-matrix-coefficients" x);
+            range = CICP_range.picker
+		(get_header "cicp-full-range-flag" x);
         }
     }
 
@@ -608,7 +610,8 @@ Colour_CICP_item = class
                 fields = [
                     $primaries => "cicp-colour-primaries",
                     $transfer => "cicp-transfer-characteristics",
-                    $matrix => "cicp-matrix-coefficients"
+                    $matrix => "cicp-matrix-coefficients",
+                    $range => "cicp-full-range-flag"
                 ];
             }
         }

@@ -3,7 +3,9 @@
 ## 9.2.2 tbd
 
 - better arg parsing [wacklefluff]
-- support VipsBlob, so `*load_buffer` and `*save_buffer` work
+- support VipsBlob, so `*load_buffer` and `*save_buffer` work, and you can
+  `get_header` gainmap-data and profiles
+- update CICP support for 8.19 final
 
 ## 9.2.1 2026/10/01
 
