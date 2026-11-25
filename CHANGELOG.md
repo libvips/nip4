@@ -6,6 +6,7 @@
 - support VipsBlob, so `*load_buffer` and `*save_buffer` work, and you can
   `get_header` gainmap-data and profiles
 - update CICP support for 8.19 final
+- update dcrawload for 8.19
 
 ## 9.2.1 2026/10/01
 

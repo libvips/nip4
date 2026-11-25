@@ -12,6 +12,7 @@ Tasks_capture_item = class
             path = Pathname "File to load" "empty";
             depth = Option (_ "Bitdepth") [_ "8 bit", _ "16 bit"] 0;
             halfsize = Toggle "Decode at half size" false;
+            auto_brightness = Toggle "Enable auto-brightness" false;
 
             _result
                 = Image blank, path.value == "empty"
@@ -19,7 +20,8 @@ Tasks_capture_item = class
             {
                 image = vips_dcrawload [
                     $bitdepth => [8, 16]?depth,
-                    $half_size => to_bool halfsize
+                    $half_size => to_bool halfsize,
+                    $auto_brightness => to_bool auto_brightness
                   ] path.value;
 
                 blank = image_new [
