@@ -1,6 +1,6 @@
 ## master
 
-## 9.2.2 tbd
+## 9.2.2 2026/11/25
 
 - better arg parsing [wacklefluff]
 - support VipsBlob, so `*load_buffer` and `*save_buffer` work, and you can
