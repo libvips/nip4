@@ -467,7 +467,7 @@ Colour_uhdr_item = class
 
     Import_item = class
         Menuaction (_ "Import") (_ "import UltraHDR image to scRGB") {
-        action x = map_unary uhdr2scRGB x;
+        action x = map_unary UHDR2scRGB x;
     }
 
     sep1 = Menuseparator;

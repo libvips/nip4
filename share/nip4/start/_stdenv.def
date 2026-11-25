@@ -2159,12 +2159,12 @@ float2rad image
         Operator_type.COMPOUND_REWRAP false;
 }
 
-uhdr2scRGB image
-    = oo_unary_function uhdr2scRGB_op image, is_class image
-    = vips_uhdr2scRGB [] image, is_image image
-    = error_bad_args "uhdr2scRGB" ["Image"] [image]
+UHDR2scRGB image
+    = oo_unary_function UHDR2scRGB_op image, is_class image
+    = vips_UHDR2scRGB [] image, is_image image
+    = error_bad_args "UHDR2scRGB" ["Image"] [image]
 {
-    uhdr2scRGB_op = Operator "uhdr2scRGB" uhdr2scRGB
+    UHDR2scRGB_op = Operator "UHDR2scRGB" UHDR2scRGB
         Operator_type.COMPOUND_REWRAP false;
 }
 
